@@ -33,4 +33,11 @@ impl Layer {
             self.nodes.iter_mut().for_each(|x| x.result(learn));
         }
     }
+    pub fn display(&self) -> String {
+        let mut s = String::new();
+        for i in 0..self.nodes.len() {
+            s.push_str(&format!("[{:.3}] ", self.nodes[i].value));
+        }
+        s
+    }
 }

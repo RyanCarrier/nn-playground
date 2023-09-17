@@ -31,7 +31,13 @@ impl Network {
         if self.layers.len() == 0 {
             return Err("Network: Can not run network with zero layers".to_string());
         }
-        if initial_inputs.len() != self.layers[0].nodes.len() {
+        if self.layers[0].nodes.len() == 0 {
+            return Err("Network: Can not run network with zero nodes".to_string());
+        }
+        if self.layers[0].nodes[0].paths.len() == 0 {
+            return Err("Network: Can not run network with zero paths".to_string());
+        }
+        if initial_inputs.len() != self.layers[0].nodes[0].paths.len() {
             return Err(format!(
                 "{}: initial_inputs {} != layers.first.len {})",
                 "Network::run",
@@ -78,6 +84,10 @@ impl Network {
             .map(|(x, y)| (x - y).abs())
             .sum::<f64>()
             / (test_case.output.len() as f64);
+        println!(
+            "result: {:?}\nexpect: {:?}, result_diff: {:?}",
+            result, test_case.output, result_difference
+        );
         Ok(result_difference)
     }
 
@@ -92,19 +102,7 @@ impl Network {
         let result = results.into_iter().sum::<f64>() / cases_len as f64;
         Ok(result)
     }
-    pub fn learn(&mut self, test_cases: &Vec<GenericTestCase>, rate: f64) -> Result<bool, String> {
-        //0.0 correct, 1.0 false
-        let prev_result = self.test_all(&test_cases)?;
-        self.rand_weights(rate);
-        let result = match self.test_all(&test_cases) {
-            Ok(x) => x,
-            Err(err) => return Err(format!("{}: {}", "learn", err)),
-        };
 
-        let learn = result < prev_result;
-        self.result(learn);
-        Ok(learn)
-    }
     pub fn auto_learn(
         &mut self,
         test_cases: &Vec<GenericTestCase>,
@@ -112,9 +110,12 @@ impl Network {
     ) -> Result<(), String> {
         let mut learn_results = vec![0.0; max_iterations];
         let mut prev_result = self.test_all(&test_cases)?;
-        let mut rate = 1.0;
+        let mut rate: f64 = 0.1;
         for i in 0..max_iterations {
-            let result = self.test_all(&test_cases)?;
+            let result = match self.test_all(&test_cases) {
+                Ok(r) => r,
+                Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
+            };
             let learn = result < prev_result;
             self.result(learn);
             learn_results[i] = result;
@@ -123,9 +124,20 @@ impl Network {
             } else {
                 rate *= 1.05;
             }
+            rate = rate.min(1.0).max(0.0);
+            println!("i:{} result:{} rate:{}", i, result, rate);
+            println!("{}", self.display());
             self.rand_weights(rate);
             prev_result = result;
         }
         Ok(())
+    }
+    pub fn display(&self) -> String {
+        let mut result = String::new();
+        self.layers.iter().for_each(|x| {
+            result.push_str(&x.display());
+            result.push_str("\n");
+        });
+        result
     }
 }

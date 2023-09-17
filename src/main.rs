@@ -13,8 +13,8 @@ fn main_1() {
         .iter()
         .map(|x| x.to_generic())
         .collect();
-    for i in [10, 1000, 100000].iter() {
-        let mut network = network::Network::new(2, 1, 4, 4);
+    for i in [10, 10, 10].iter() {
+        let mut network = network::Network::new(2, 1, 3, 3);
         match network.auto_learn(&test_cases, *i) {
             Ok(_) => (),
             Err(e) => panic!("{}", e),

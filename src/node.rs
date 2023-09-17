@@ -36,9 +36,18 @@ impl Node {
         // for i in 0..self.paths.len() {
         //     self.paths[i] += (random::<f64>() - 0.5) * rate;
         // }
-        self.paths
-            .iter_mut()
-            .for_each(|x| *x += (random::<f64>() - 0.5) * rate);
+        let old = self.paths.clone();
+        fn rand_rate(rate: f64) -> f64 {
+            (random::<f64>() - 0.5) * rate
+        }
+
+        self.paths.iter_mut().for_each(|x| {
+            let r = rand_rate(rate);
+            // println!("r: {}, rate: {}", r, rate);
+            *x += r;
+            *x = x.min(1.0).max(0.0);
+        });
+        // println!("old: {:?}, new:{:?}", old, self.paths);
     }
 
     pub fn result(&mut self, learn: bool) {
