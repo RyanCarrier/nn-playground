@@ -16,3 +16,12 @@ prior knowledge makes the current plan;
 
 Learning rate can scale linearly it will be fine
 
+## pt2
+
+Ok clearly not working and I thikn big issue is from wanting binary outputs with ananlogue inputs;
+
+In future you will need things to decode inputs into input nodes (like pixels or shape coordinates??), but potentially also for output too. So having a analogue to binary converter is probably 'ok' and 'normally' done? idk there is transformers and diffusers and stuff, one of those is probably output
+
+plus i know matricies are big shit for nn so probably need to drop the layers stuff anyway for matricicies somehow; matricies good cause SIMDeeznuts or something like that
+
+

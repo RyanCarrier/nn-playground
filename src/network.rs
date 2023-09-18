@@ -4,6 +4,7 @@ use anyhow::Result;
 //these really don't need to be structs but they probably will need to be later?
 pub struct Network {
     pub layers: Vec<Layer>,
+    pub output_fn: fn(f64) -> f64,
 }
 impl Network {
     pub fn new(
@@ -11,6 +12,7 @@ impl Network {
         output_nodes: usize,
         internal_nodes: usize,
         internal_layers: usize,
+        output_fn: Option<fn(f64) -> f64>,
     ) -> Network {
         Network {
             layers: {
@@ -21,6 +23,10 @@ impl Network {
                 }
                 layers.push(Layer::new(output_nodes, internal_nodes));
                 layers
+            },
+            output_fn: match output_fn {
+                Some(x) => x,
+                None => |x| x,
             },
         }
     }
@@ -57,8 +63,13 @@ impl Network {
                 .collect::<Vec<f64>>();
             self.layers[i].run(inputs)?;
         }
+        let output_fn = self.output_fn;
         match self.layers.last() {
-            Some(x) => Ok(x.nodes.iter().map(|x| x.value).collect::<Vec<f64>>()),
+            Some(x) => Ok(x
+                .nodes
+                .iter()
+                .map(|x| output_fn(x.value))
+                .collect::<Vec<f64>>()),
             None => Err("self.layers.last() returned None".to_string()),
         }
     }
@@ -84,10 +95,12 @@ impl Network {
             .map(|(x, y)| (x - y).abs())
             .sum::<f64>()
             / (test_case.output.len() as f64);
-        println!(
-            "result: {:?}\nexpect: {:?}, result_diff: {:?}",
-            result, test_case.output, result_difference
-        );
+        // if result_difference > 0.1 {
+        //     println!(
+        //         "===RESULT DIFFERENCE===, result: {:?} expect: {:?}, result_diff: {:?}",
+        //         result, test_case.output, result_difference
+        //     );
+        // }
         Ok(result_difference)
     }
 
@@ -103,33 +116,56 @@ impl Network {
         Ok(result)
     }
 
+    pub fn print_all(&mut self, test_cases: &Vec<GenericTestCase>) -> Result<(), String> {
+        let cases_len = test_cases.len();
+        for i in 0..cases_len {
+            let result = match self.run(&test_cases[i].input) {
+                Ok(x) => x,
+                Err(err) => return Err(format!("{}: {}", "print_all", err)),
+            };
+            println!("===case {}===\n{}", i, &test_cases[i].display);
+            println!(
+                "test_result: [{}], diff: [{}]",
+                result[0],
+                (result[0] - &test_cases[i].output[0]).abs()
+            );
+        }
+        Ok(())
+    }
+
     pub fn auto_learn(
         &mut self,
         test_cases: &Vec<GenericTestCase>,
         max_iterations: usize,
     ) -> Result<(), String> {
-        let mut learn_results = vec![0.0; max_iterations];
-        let mut prev_result = self.test_all(&test_cases)?;
-        let mut rate: f64 = 0.1;
+        let mut learn_error = vec![0.0; max_iterations];
+        let mut prev_error = self.test_all(&test_cases)?;
+        let mut rate: f64 = 0.2;
         for i in 0..max_iterations {
-            let result = match self.test_all(&test_cases) {
+            let error = match self.test_all(&test_cases) {
                 Ok(r) => r,
                 Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
             };
-            let learn = result < prev_result;
+            let learn = error <= prev_error;
             self.result(learn);
-            learn_results[i] = result;
-            if learn {
-                rate *= 0.9;
-            } else {
-                rate *= 1.05;
-            }
+            learn_error[i] = error;
+            rate = error;
+            // if learn {
+            //     rate *= 0.99;
+            // } else {
+            //     rate *= 1.005;
+            // }
             rate = rate.min(1.0).max(0.0);
-            println!("i:{} result:{} rate:{}", i, result, rate);
-            println!("{}", self.display());
             self.rand_weights(rate);
-            prev_result = result;
+            prev_error = error;
         }
+        let result = self.test_all(&test_cases)?;
+        println!(
+            "==RESULT==\ni:{} error:{} rate:{}",
+            max_iterations, result, rate
+        );
+        println!("==VALUES==\n{}", self.display());
+        self.print_all(&test_cases)?;
         Ok(())
     }
     pub fn display(&self) -> String {

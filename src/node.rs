@@ -12,9 +12,9 @@ pub struct Node {
 impl Node {
     pub fn new(len: usize) -> Node {
         Node {
-            paths: vec![0.5; len],
-            old_paths: vec![0.5; len],
-            value: 0.5,
+            paths: vec![0.0; len],
+            old_paths: vec![0.0; len],
+            value: 0.0,
         }
     }
     pub fn run(&mut self, inputs: &Vec<f64>) -> Result<(), String> {
@@ -33,18 +33,14 @@ impl Node {
         Ok(())
     }
     pub fn rand_weights(&mut self, rate: f64) {
-        // for i in 0..self.paths.len() {
-        //     self.paths[i] += (random::<f64>() - 0.5) * rate;
-        // }
-        let old = self.paths.clone();
         fn rand_rate(rate: f64) -> f64 {
             (random::<f64>() - 0.5) * rate
         }
-
         self.paths.iter_mut().for_each(|x| {
             let r = rand_rate(rate);
             // println!("r: {}, rate: {}", r, rate);
             *x += r;
+            // *x = x.min(1.0).max(-1.0);
             *x = x.min(1.0).max(0.0);
         });
         // println!("old: {:?}, new:{:?}", old, self.paths);
