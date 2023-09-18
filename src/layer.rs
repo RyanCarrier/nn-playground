@@ -28,10 +28,11 @@ impl Layer {
         self.nodes.iter_mut().for_each(|x| x.run(&inputs).unwrap());
         Ok(())
     }
-    pub fn result(&mut self, learn: bool) {
-        if learn {
-            self.nodes.iter_mut().for_each(|x| x.result(learn));
-        }
+    pub fn update(&mut self) {
+        self.nodes.iter_mut().for_each(|x| x.update());
+    }
+    pub fn revert(&mut self) {
+        self.nodes.iter_mut().for_each(|x| x.revert());
     }
     pub fn display(&self) -> String {
         let mut s = String::new();

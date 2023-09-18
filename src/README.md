@@ -35,3 +35,26 @@ OK we can't do it with how it is currently cause you need some value to be injec
 
 We will try with adding constant to nodes
 
+I also have no idea what my internal bounds should be, [-1,1] at least... but why not no bounds? feels like being able to go infinite on weights could throw is into wrong local max's or something
+
+### pt 3.5
+
+I think i was kinda wrong about output transform, going anologue to binary means you can't slowly ppush in right direction, but we also don't need it landing exactly on the 1.0 cause that will be hard so maybe we will (expect) bounds to be [0,1] but scale it for the result so ((result*2)^2)/2 , this shouldn't be too heavy
+
+no that won't work lol
+
+we will need sin so some kind of e^x-e^-x or smth, or smth 1- 1/1+x 
+
+ok the google sheets mini taylor series was a failed plan for looking at -sin
+
+ok played with graph for (-2x3+3x2), but honestly linear with bounds is probably the way to go lol
+
+### pt 3.6
+
+Got original one working properly, a few things; c wasn't getting reset oops
+
+Wasn't saving weights properly/reverting them oops (currently we are doing it too often but who cares)
+
+changed output transform to just min max 1.0,0.0
+
+

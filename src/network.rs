@@ -20,7 +20,7 @@ impl Network {
             layers: {
                 let mut layers: Vec<Layer> = Vec::new();
                 layers.push(Layer::new(internal_nodes, input_nodes));
-                for _ in 0..(internal_layers - 1) {
+                for _ in 0..(internal_layers) {
                     layers.push(Layer::new(internal_nodes, internal_nodes));
                 }
                 layers.push(Layer::new(output_nodes, internal_nodes));
@@ -28,7 +28,7 @@ impl Network {
             },
             output_fn: match output_fn {
                 Some(x) => x,
-                None => |x| x,
+                None => |x| x.min(1.0).max(0.0),
             },
         }
     }
@@ -78,10 +78,11 @@ impl Network {
 
     //result is the value compared to previous success rate, 1.0 would be same as previous
     // result is a ratio (higher is better)
-    pub fn result(&mut self, learn: bool) {
-        if learn {
-            self.layers.iter_mut().for_each(|x| x.result(learn));
-        }
+    pub fn update(&mut self) {
+        self.layers.iter_mut().for_each(|x| x.update());
+    }
+    pub fn revert(&mut self) {
+        self.layers.iter_mut().for_each(|x| x.revert());
     }
 
     //returns the difference between the output and the expected output (0.0 is perfect, 1.0 is
@@ -135,6 +136,7 @@ impl Network {
         Ok(())
     }
     pub fn auto_learn(&mut self, test_cases: &Vec<GenericTestCase>) -> Result<(), String> {
+        //we probably should have a timeout heh
         self.learn(test_cases, None, Some(0.00000001))
     }
     pub fn learn(
@@ -144,7 +146,7 @@ impl Network {
         min_error: Option<f64>,
     ) -> Result<(), String> {
         let mut learn_error = Vec::new();
-        let mut prev_error = self.test_all(&test_cases)?;
+        let mut error = self.test_all(&test_cases)?;
         let mut rate: f64 = 0.2;
         let max_iterations = match max_iterations {
             Some(x) => x,
@@ -156,23 +158,32 @@ impl Network {
         };
 
         let mut i = 0;
-        while i < max_iterations && prev_error > min_error {
-            let error = match self.test_all(&test_cases) {
+        let mut best_error = 1.0;
+        let mut last_rate_change = 0;
+        while i < max_iterations && error > min_error {
+            self.rand_weights(rate);
+            error = match self.test_all(&test_cases) {
                 Ok(r) => r,
                 Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
             };
-            let learn = error <= prev_error;
-            self.result(learn);
-            learn_error.push(error);
-            // rate = error;
-            if learn {
+            if error < best_error {
+                best_error = error;
                 rate *= 0.99;
+                last_rate_change = i;
+                println!("=====learn, rate lowering to {:.3}", rate);
+                //this is innefficient
+                self.update();
             } else {
-                rate *= 1.005;
+                self.revert();
             }
-            rate = rate.min(1.0).max(0.0);
-            self.rand_weights(rate);
-            prev_error = error;
+            if i - last_rate_change > 50 {
+                rate *= 1.05;
+                println!("=====heating up, rate increasing to {:.3}", rate);
+                last_rate_change = i;
+            }
+            learn_error.push(error);
+            rate = rate.min(4.0).max(0.0);
+            println!("{}: {}", i, error);
             i += 1;
         }
         let result = self.test_all(&test_cases)?;

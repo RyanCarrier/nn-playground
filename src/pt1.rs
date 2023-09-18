@@ -7,42 +7,20 @@ mod tests {
     use crate::TestCaseOr;
     use crate::{network, GenericTestCase};
 
-    fn test_cases() -> Vec<GenericTestCase> {
-        TestCaseOr::get_all()
-            .iter()
-            .map(|x| x.to_generic())
-            .collect()
-    }
     #[test]
     fn known_good() {
-        let test_cases = test_cases();
+        let test_cases = TestCaseOr::get_all_generic();
         let mut network = network::Network {
             layers: vec![
                 Layer {
                     nodes: vec![
-                        Node {
-                            paths: vec![1.0, 0.0],
-                            old_paths: vec![0.0, 0.0],
-                            value: 0.0,
-                        },
-                        Node {
-                            paths: vec![0.0, 1.0],
-                            old_paths: vec![0.0, 0.0],
-                            value: 0.0,
-                        },
-                        Node {
-                            paths: vec![0.0, 0.0],
-                            old_paths: vec![0.0, 0.0],
-                            value: 0.0,
-                        },
+                        Node::new_paths(vec![1.0, 0.0]),
+                        Node::new_paths(vec![0.0, 1.0]),
+                        Node::new_paths(vec![0.0, 0.0]),
                     ],
                 },
                 Layer {
-                    nodes: vec![Node {
-                        paths: vec![1.0, 1.0, 1.0],
-                        old_paths: vec![],
-                        value: 0.0,
-                    }],
+                    nodes: vec![Node::new_paths(vec![1.0, 1.0, 1.0])],
                 },
             ],
             output_fn: |x| if x > 0.5 { 1.0 } else { 0.0 },
@@ -50,59 +28,26 @@ mod tests {
         let error = network.test_all(&test_cases).unwrap();
         assert_eq!(error, 0.0);
     }
-    #[test]
-    fn learn_10000() {
-        test_iter(10000);
-    }
-    #[test]
-    fn learn_1000() {
-        test_iter(1000);
-    }
-    #[test]
-    fn learn_10() {
-        test_iter(10);
-    }
-    #[test]
-    fn learn_5() {
-        test_iter(5);
-    }
-    #[test]
-    fn learn_1() {
-        test_iter(1);
-    }
-    #[test]
-    fn learn_0() {
-        //lol
-        //this is only here cause it was working with base of 0.5 paths and i was like???
-        test_iter(0);
-    }
+
     fn default_network() -> network::Network {
-        network::Network::new(2, 1, 3, 1, Some(|x| if x > 0.5 { 1.0 } else { 0.0 }))
-    }
-
-    fn test_iter(i: usize) {
-        let test_cases = test_cases();
-        let mut network = default_network();
-        match network.learn(&test_cases, Some(i), None) {
-            Ok(_) => (),
-            Err(e) => panic!("{}", e),
-        }
-        test(network);
+        network::Network::new(2, 1, 3, 1, Some(|x| x.min(1.0).max(0.0)))
     }
 
     #[test]
-    fn auto_learn() {
-        let test_cases = test_cases();
-        let mut network = default_network();
-        match network.auto_learn(&test_cases) {
-            Ok(_) => (),
-            Err(e) => panic!("{}", e),
+    fn learn() {
+        let test_cases = TestCaseOr::get_all_generic();
+        for _ in 0..20 {
+            let mut network = default_network();
+            match network.learn(&test_cases, Some(100_000), None) {
+                Ok(_) => (),
+                Err(e) => panic!("{}", e),
+            }
+            test(network);
         }
-        test(network);
     }
 
     fn test(mut network: network::Network) {
-        let error = network.test_all(&test_cases());
+        let error = network.test_all(&TestCaseOr::get_all_generic());
         assert!(error.is_ok());
         assert_eq!(error.unwrap(), 0.0);
     }
@@ -126,6 +71,12 @@ impl TestCaseOr {
         });
         s.push_str(&format!("\noutput: [{:.0}]", self.output));
         s
+    }
+    pub fn get_all_generic() -> Vec<GenericTestCase> {
+        TestCaseOr::get_all()
+            .iter()
+            .map(|x| x.to_generic())
+            .collect()
     }
     pub fn get_all() -> [TestCaseOr; 4] {
         [
