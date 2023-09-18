@@ -1,103 +1,36 @@
-use crate::GenericTestCase;
+use crate::{run, GenericTestCase};
 
+pub fn runner() {
+    let test_cases = TestCaseOrAnd::get_all_generic();
+    run("pt2, OrAnd", &test_cases, 1..5, 1..7);
+}
+
+#[cfg(test)]
 mod tests {
-    use crate::{layer::Layer, network, node::Node, GenericTestCase};
+
+    use crate::network;
 
     use super::TestCaseOrAnd;
 
-    fn test_cases() -> Vec<GenericTestCase> {
-        TestCaseOrAnd::get_all()
-            .iter()
-            .map(|x| x.to_generic())
-            .collect()
-    }
-    #[test]
-    fn known_good() {
-        let test_cases = test_cases();
-        let mut network = network::Network {
-            layers: vec![
-                Layer {
-                    nodes: vec![
-                        Node {
-                            paths: vec![1.0, 1.0, 0.0],
-                            old_paths: vec![0.0, 0.0],
-                            value: 0.0,
-                        },
-                        Node {
-                            paths: vec![1.0, 0.0, 1.0],
-                            old_paths: vec![0.0, 0.0],
-                            value: 0.0,
-                        },
-                        Node {
-                            paths: vec![1.0, 0.0, 0.0],
-                            old_paths: vec![0.0, 0.0],
-                            value: 0.0,
-                        },
-                        Node {
-                            paths: vec![1.0, 0.0, 0.0],
-                            old_paths: vec![0.0, 0.0],
-                            value: 0.0,
-                        },
-                    ],
-                },
-                Layer {
-                    nodes: vec![Node {
-                        paths: vec![1.0, 1.0, 1.0, 1.0],
-                        old_paths: vec![],
-                        value: 0.0,
-                    }],
-                },
-            ],
-            output_fn: |x| if x > 0.5 { 1.0 } else { 0.0 },
-        };
-        let error = network.test_all(&test_cases).unwrap();
-        assert_eq!(error, 0.0);
-    }
-    #[test]
-    fn learn_10() {
-        test_iter(10);
-    }
-    #[test]
-    fn learn_5() {
-        test_iter(5);
-    }
-    #[test]
-    fn learn_1() {
-        test_iter(1);
-    }
-    #[test]
-    fn learn_0() {
-        //lol
-        test_iter(0);
-    }
-
     fn default_network() -> network::Network {
-        network::Network::new(3, 1, 4, 1, Some(|x| if x > 0.5 { 1.0 } else { 0.0 }))
-    }
-
-    fn test_iter(i: usize) {
-        let test_cases = test_cases();
-        let mut network = default_network();
-        match network.learn(&test_cases, Some(i), None) {
-            Ok(_) => (),
-            Err(e) => panic!("{}", e),
-        }
-        test(network);
+        network::Network::new(3, 1, 4, 1, None)
     }
 
     #[test]
-    fn auto_learn() {
-        let test_cases = test_cases();
-        let mut network = default_network();
-        match network.auto_learn(&test_cases) {
-            Ok(_) => (),
-            Err(e) => panic!("{}", e),
+    fn learn() {
+        let test_cases = TestCaseOrAnd::get_all_generic();
+        for _ in 0..20 {
+            let mut network = default_network();
+            match network.learn(&test_cases, Some(100_000), None) {
+                Ok(_) => (),
+                Err(e) => panic!("{}", e),
+            }
+            test(network);
         }
-        test(network);
     }
 
     fn test(mut network: network::Network) {
-        let error = network.test_all(&test_cases());
+        let error = network.test_all(&TestCaseOrAnd::get_all_generic());
         assert!(error.is_ok());
         assert_eq!(error.unwrap(), 0.0);
     }
@@ -123,6 +56,12 @@ impl TestCaseOrAnd {
         s.push_str(&format!("\noutput: [{:.0}]", self.output));
         s
     }
+    pub fn get_all_generic() -> Vec<GenericTestCase> {
+        TestCaseOrAnd::get_all()
+            .iter()
+            .map(|x| x.to_generic())
+            .collect()
+    }
     pub fn get_all() -> [TestCaseOrAnd; 8] {
         let mut result: [TestCaseOrAnd; 8] = [TestCaseOrAnd {
             input: [0.0, 0.0, 0.0],
@@ -130,10 +69,10 @@ impl TestCaseOrAnd {
         }; 8];
         //k=0 or, k=1 and
         //haha yeah nice
-        for i in 0..1 {
-            for j in 0..1 {
-                for k in 0..1 {
-                    result[i + 2 * j + 4 * k] = TestCaseOrAnd {
+        for i in 0..2 {
+            for j in 0..2 {
+                for k in 0..2 {
+                    result[i + (2 * j) + (4 * k)] = TestCaseOrAnd {
                         input: [i as f64, j as f64, k as f64],
                         //shoudl probably verify this is correct too...
                         output: ((!k & (i | j)) | (k & (i & j))) as f64,

@@ -1,57 +1,78 @@
-use pt1::TestCaseOr;
-use pt2::TestCaseOrAnd;
+use std::ops::Range;
 
-pub mod layer;
+use network::Network;
+
+mod layer;
 mod network;
-pub mod node;
-pub mod path;
+mod node;
 mod pt1;
 mod pt1_5;
 mod pt2;
 
 fn main() {
-    // main_1();
-    main_2();
-}
-
-fn main_1() {
-    let test_cases = TestCaseOr::get_all_generic();
-    for i in [1000].iter() {
-        run_1(*i, &test_cases);
-    }
-}
-fn run_1(iter: usize, test_cases: &Vec<GenericTestCase>) {
-    let output_fn: fn(f64) -> f64 = |x| x.min(1.0).max(0.0);
-    let mut network = network::Network::new(2, 1, 3, 1, Some(output_fn));
-    match network.learn(&test_cases, Some(iter), None) {
-        Ok(_) => (),
-        Err(e) => panic!("{}", e),
-    }
-    match network.test_all(&test_cases) {
-        Ok(result) => {
-            println!("{}: {}", iter, result);
-        }
-        Err(e) => panic!("{}", e),
-    }
-}
-
-fn main_2() {
-    let test_cases = TestCaseOrAnd::get_all_generic();
-    let mut network = network::Network::new(3, 1, 4, 2, Some(|x: f64| x.min(1.0).max(0.0)));
-    match network.learn(&test_cases, Some(10000), None) {
-        Ok(_) => (),
-        Err(e) => panic!("{}", e),
-    }
-    match network.test_all(&test_cases) {
-        Ok(result) => {
-            println!("{}: {}", 10000, result);
-        }
-        Err(e) => panic!("{}", e),
-    }
+    pt1::runner();
+    pt1_5::runner();
+    pt2::runner();
 }
 
 pub struct GenericTestCase {
-    input: Vec<f64>,
-    output: Vec<f64>,
-    display: String,
+    pub input: Vec<f64>,
+    pub output: Vec<f64>,
+    pub display: String,
+}
+
+pub fn run(
+    title: &str,
+    test_cases: &Vec<GenericTestCase>,
+    layers: Range<usize>,
+    nodes: Range<usize>,
+) {
+    let inputs = test_cases[0].input.len();
+    let outputs = test_cases[0].output.len();
+    println!("=== {} ===", title);
+    for layer in layers {
+        for node in nodes.clone() {
+            run_network(
+                Network::new(inputs, outputs, node, layer, None),
+                &test_cases,
+            );
+        }
+        println!("------");
+    }
+}
+
+pub fn run_network(network: Network, test_cases: &Vec<GenericTestCase>) {
+    print!(
+        "internal layers:\t{},\tinternal nodes:\t{}",
+        network.internel_layers(),
+        network.internal_nodes(),
+    );
+    let rounds = 10;
+    let mut total_iterations = 0;
+    for _ in 0..rounds {
+        let mut network = network.clone();
+        let learn_errors: Vec<f64> = match network.learn(&test_cases, Some(100_000), None) {
+            Ok(l) => l,
+            Err(e) => panic!("{}", e),
+        };
+        match verify(network, test_cases) {
+            Ok(_) => (),
+            Err(e) => {
+                println!("\t\t{}", e);
+                return;
+            }
+        }
+        total_iterations += learn_errors.len();
+    }
+    println!("\t\tOk! (avg iterations: {})", total_iterations / rounds);
+}
+pub fn verify(mut network: Network, test_cases: &Vec<GenericTestCase>) -> Result<(), String> {
+    let error = match network.test_all(test_cases) {
+        Ok(r) => r,
+        Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
+    };
+    if error != 0.0 {
+        return Err(format!("error: {}", error));
+    }
+    Ok(())
 }

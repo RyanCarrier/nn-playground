@@ -57,4 +57,8 @@ Wasn't saving weights properly/reverting them oops (currently we are doing it to
 
 changed output transform to just min max 1.0,0.0
 
+## pt 4
+
+I don't even know, just gave it some layers and nodes and it just worked tbh
+
 

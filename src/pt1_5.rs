@@ -1,5 +1,9 @@
-use crate::GenericTestCase;
+use crate::{run, GenericTestCase};
 
+pub fn runner() {
+    let test_cases = TestCaseAnd::get_all_generic();
+    run("pt1_5, And", &test_cases, 1..5, 1..7);
+}
 #[cfg(test)]
 mod tests {
     use crate::network;

@@ -4,6 +4,7 @@ use crate::{layer::Layer, GenericTestCase};
 use anyhow::Result;
 
 //these really don't need to be structs but they probably will need to be later?
+#[derive(Clone)]
 pub struct Network {
     pub layers: Vec<Layer>,
     pub output_fn: fn(f64) -> f64,
@@ -20,7 +21,7 @@ impl Network {
             layers: {
                 let mut layers: Vec<Layer> = Vec::new();
                 layers.push(Layer::new(internal_nodes, input_nodes));
-                for _ in 0..(internal_layers) {
+                for _ in 0..(internal_layers - 1) {
                     layers.push(Layer::new(internal_nodes, internal_nodes));
                 }
                 layers.push(Layer::new(output_nodes, internal_nodes));
@@ -31,6 +32,15 @@ impl Network {
                 None => |x| x.min(1.0).max(0.0),
             },
         }
+    }
+    pub fn internel_layers(&self) -> usize {
+        self.layers.len() - 1
+    }
+    pub fn internal_nodes(&self) -> usize {
+        if self.layers.len() < 2 {
+            return 0;
+        }
+        self.layers[0].nodes.len()
     }
     pub fn rand_weights(&mut self, rate: f64) {
         self.layers.iter_mut().for_each(|x| x.rand_weights(rate));
@@ -135,7 +145,7 @@ impl Network {
         }
         Ok(())
     }
-    pub fn auto_learn(&mut self, test_cases: &Vec<GenericTestCase>) -> Result<(), String> {
+    pub fn auto_learn(&mut self, test_cases: &Vec<GenericTestCase>) -> Result<Vec<f64>, String> {
         //we probably should have a timeout heh
         self.learn(test_cases, None, Some(0.00000001))
     }
@@ -144,8 +154,8 @@ impl Network {
         test_cases: &Vec<GenericTestCase>,
         max_iterations: Option<usize>,
         min_error: Option<f64>,
-    ) -> Result<(), String> {
-        let mut learn_error = Vec::new();
+    ) -> Result<Vec<f64>, String> {
+        let mut learn_errors = Vec::new();
         let mut error = self.test_all(&test_cases)?;
         let mut rate: f64 = 0.2;
         let max_iterations = match max_iterations {
@@ -170,7 +180,7 @@ impl Network {
                 best_error = error;
                 rate *= 0.99;
                 last_rate_change = i;
-                println!("=====learn, rate lowering to {:.3}", rate);
+                // println!("=====learn, rate lowering to {:.3}", rate);
                 //this is innefficient
                 self.update();
             } else {
@@ -178,22 +188,22 @@ impl Network {
             }
             if i - last_rate_change > 50 {
                 rate *= 1.05;
-                println!("=====heating up, rate increasing to {:.3}", rate);
+                // println!("=====heating up, rate increasing to {:.3}", rate);
                 last_rate_change = i;
             }
-            learn_error.push(error);
+            learn_errors.push(error);
             rate = rate.min(4.0).max(0.0);
-            println!("{}: {}", i, error);
+            // println!("{}: {}", i, error);
             i += 1;
         }
-        let result = self.test_all(&test_cases)?;
-        println!(
-            "==RESULT==\ni:{} error:{} rate:{}",
-            max_iterations, result, rate
-        );
-        println!("==VALUES==\n{}", self.display());
-        self.print_all(&test_cases)?;
-        Ok(())
+        // let result = self.test_all(&test_cases)?;
+        // println!(
+        //     "==RESULT==\ni:{} error:{} rate:{}",
+        //     max_iterations, result, rate
+        // );
+        // println!("==VALUES==\n{}", self.display());
+        // self.print_all(&test_cases)?;
+        Ok(learn_errors)
     }
     pub fn display(&self) -> String {
         let mut result = String::new();
