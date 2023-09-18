@@ -10,10 +10,20 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn new(len: usize) -> Node {
+    pub fn new(default_weight: f64, len: usize) -> Node {
         Node {
-            paths: vec![0.0; len],
-            old_paths: vec![0.0; len],
+            paths: vec![default_weight; len],
+            old_paths: vec![default_weight; len],
+            value: 0.0,
+        }
+    }
+    pub fn new_default(len: usize) -> Node {
+        Node::new(1.0, len)
+    }
+    pub fn new_paths(paths: Vec<f64>) -> Node {
+        Node {
+            old_paths: paths.clone(),
+            paths,
             value: 0.0,
         }
     }
@@ -40,8 +50,8 @@ impl Node {
             let r = rand_rate(rate);
             // println!("r: {}, rate: {}", r, rate);
             *x += r;
-            // *x = x.min(1.0).max(-1.0);
-            *x = x.min(1.0).max(0.0);
+            *x = x.min(1.0).max(-1.0);
+            // *x = x.min(1.0).max(0.0);
         });
         // println!("old: {:?}, new:{:?}", old, self.paths);
     }

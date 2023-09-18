@@ -1,3 +1,5 @@
+use std::usize::{self, MAX};
+
 use crate::{layer::Layer, GenericTestCase};
 use anyhow::Result;
 
@@ -132,32 +134,46 @@ impl Network {
         }
         Ok(())
     }
-
-    pub fn auto_learn(
+    pub fn auto_learn(&mut self, test_cases: &Vec<GenericTestCase>) -> Result<(), String> {
+        self.learn(test_cases, None, Some(0.00000001))
+    }
+    pub fn learn(
         &mut self,
         test_cases: &Vec<GenericTestCase>,
-        max_iterations: usize,
+        max_iterations: Option<usize>,
+        min_error: Option<f64>,
     ) -> Result<(), String> {
-        let mut learn_error = vec![0.0; max_iterations];
+        let mut learn_error = Vec::new();
         let mut prev_error = self.test_all(&test_cases)?;
         let mut rate: f64 = 0.2;
-        for i in 0..max_iterations {
+        let max_iterations = match max_iterations {
+            Some(x) => x,
+            None => MAX,
+        };
+        let min_error = match min_error {
+            Some(x) => x,
+            None => 0.0,
+        };
+
+        let mut i = 0;
+        while i < max_iterations && prev_error > min_error {
             let error = match self.test_all(&test_cases) {
                 Ok(r) => r,
                 Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
             };
             let learn = error <= prev_error;
             self.result(learn);
-            learn_error[i] = error;
-            rate = error;
-            // if learn {
-            //     rate *= 0.99;
-            // } else {
-            //     rate *= 1.005;
-            // }
+            learn_error.push(error);
+            // rate = error;
+            if learn {
+                rate *= 0.99;
+            } else {
+                rate *= 1.005;
+            }
             rate = rate.min(1.0).max(0.0);
             self.rand_weights(rate);
             prev_error = error;
+            i += 1;
         }
         let result = self.test_all(&test_cases)?;
         println!(

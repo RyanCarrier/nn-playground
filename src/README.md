@@ -25,3 +25,13 @@ In future you will need things to decode inputs into input nodes (like pixels or
 plus i know matricies are big shit for nn so probably need to drop the layers stuff anyway for matricicies somehow; matricies good cause SIMDeeznuts or something like that
 
 
+## pt3
+
+ok having defualt paths of 1 works... but that's only because the default works. I think it's good having all paths be worth something to start with?
+
+so making a part 1.5 to do AND, cause the default won't work for AND (before moving to pt 2 which is And and Or)
+
+OK we can't do it with how it is currently cause you need some value to be injected somehow for 0,0 to make 1. So we could add an input that is controlled by weighting (but this feels wrong, becuase then it feels like for complex cases you would be probably doubling the input? with arbitrary info?), OR we could move the value of nodes up or down manually? which would be best for memory, but it feels wrong so we are probably suppose to move the paths up and down, but then idk how this would work for going to matricies...
+
+We will try with adding constant to nodes
+

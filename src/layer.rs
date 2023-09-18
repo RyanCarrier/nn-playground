@@ -7,7 +7,7 @@ pub struct Layer {
 impl Layer {
     pub fn new(len: usize, inputs: usize) -> Layer {
         Layer {
-            nodes: vec![Node::new(inputs); len],
+            nodes: vec![Node::new_default(inputs); len],
         }
     }
     pub fn rand_weights(&mut self, rate: f64) {
