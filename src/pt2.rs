@@ -2,18 +2,18 @@ use crate::{run, GenericTestCase};
 
 pub fn runner() {
     let test_cases = TestCaseOrAnd::get_all_generic();
-    run("pt2, OrAnd", &test_cases, 1..5, 1..7);
+    run::run("pt2, OrAnd", &test_cases, 1..5, 1..7);
 }
 
 #[cfg(test)]
 mod tests {
 
-    use crate::network;
+    use crate::network1::network;
 
     use super::TestCaseOrAnd;
 
-    fn default_network() -> network::Network {
-        network::Network::new(3, 1, 4, 1, None)
+    fn default_network() -> network::Network1 {
+        network::Network1::new(3, 1, 4, 1, None)
     }
 
     #[test]
@@ -29,7 +29,7 @@ mod tests {
         }
     }
 
-    fn test(mut network: network::Network) {
+    fn test(mut network: network::Network1) {
         let error = network.test_all(&TestCaseOrAnd::get_all_generic());
         assert!(error.is_ok());
         assert_eq!(error.unwrap(), 0.0);
@@ -41,11 +41,15 @@ pub struct TestCaseOrAnd {
     pub output: f64,
 }
 impl TestCaseOrAnd {
-    pub fn to_generic(&self) -> GenericTestCase {
+    pub fn to_generic(&self) -> GenericTestCase<Vec<f64>, f64> {
         GenericTestCase {
             input: self.input.to_vec(),
-            output: vec![self.output],
+            output: self.output,
+            output_nodes: 1,
             display: self.display(),
+            input_transformer: |x| x.to_vec(),
+            output_transformer: |x| *x.first().unwrap(),
+            output_error: |x, y| (x - y).abs(),
         }
     }
     pub fn display(&self) -> String {
@@ -56,7 +60,7 @@ impl TestCaseOrAnd {
         s.push_str(&format!("\noutput: [{:.0}]", self.output));
         s
     }
-    pub fn get_all_generic() -> Vec<GenericTestCase> {
+    pub fn get_all_generic() -> Vec<GenericTestCase<Vec<f64>, f64>> {
         TestCaseOrAnd::get_all()
             .iter()
             .map(|x| x.to_generic())

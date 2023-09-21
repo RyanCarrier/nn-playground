@@ -1,4 +1,4 @@
-use crate::node::Node;
+use super::node::Node;
 
 #[derive(Clone)]
 pub struct Layer {
@@ -34,6 +34,7 @@ impl Layer {
     pub fn revert(&mut self) {
         self.nodes.iter_mut().for_each(|x| x.revert());
     }
+
     pub fn display(&self) -> String {
         let mut s = String::new();
         for i in 0..self.nodes.len() {

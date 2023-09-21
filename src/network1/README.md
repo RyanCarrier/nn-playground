@@ -61,4 +61,6 @@ changed output transform to just min max 1.0,0.0
 
 I don't even know, just gave it some layers and nodes and it just worked tbh
 
+## pt 5
 
+Can go to matricies by not storing value in each, cause value would be returned, then would just add to matricie, that's how

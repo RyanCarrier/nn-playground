@@ -1,20 +1,20 @@
-use crate::{run, GenericTestCase};
+use crate::{generic_test_case::GenericTestCase, run};
 
 pub fn runner() {
     let test_cases = TestCaseOr::get_all_generic();
-    run("pt1, Or", &test_cases, 1..5, 1..7);
+    run::run("pt1, Or", &test_cases, 1..5, 1..7);
 }
 #[cfg(test)]
 mod tests {
-    use crate::layer::Layer;
-    use crate::network;
-    use crate::node::Node;
-    use crate::pt1::TestCaseOr;
+    use crate::{
+        network1::{layer::Layer, network, node::Node},
+        pt1::TestCaseOr,
+    };
 
     #[test]
     fn known_good() {
         let test_cases = TestCaseOr::get_all_generic();
-        let mut network = network::Network {
+        let mut network = network::Network1 {
             layers: vec![
                 Layer {
                     nodes: vec![
@@ -33,8 +33,8 @@ mod tests {
         assert_eq!(error, 0.0);
     }
 
-    fn default_network() -> network::Network {
-        network::Network::new(2, 1, 3, 1, Some(|x| x.min(1.0).max(0.0)))
+    fn default_network() -> network::Network1 {
+        network::Network1::new(2, 1, 3, 1, Some(|x| x.min(1.0).max(0.0)))
     }
 
     #[test]
@@ -50,7 +50,7 @@ mod tests {
         }
     }
 
-    fn test(mut network: network::Network) {
+    fn test(mut network: network::Network1) {
         let error = network.test_all(&TestCaseOr::get_all_generic());
         assert!(error.is_ok());
         assert_eq!(error.unwrap(), 0.0);
@@ -61,11 +61,15 @@ pub struct TestCaseOr {
     output: f64,
 }
 impl TestCaseOr {
-    pub fn to_generic(&self) -> GenericTestCase {
+    pub fn to_generic(&self) -> GenericTestCase<Vec<f64>, f64> {
         GenericTestCase {
             input: self.input.to_vec(),
-            output: vec![self.output],
+            output: self.output,
+            output_nodes: 1,
             display: self.display(),
+            input_transformer: |x| x.to_vec(),
+            output_transformer: |x| *x.first().unwrap(),
+            output_error: |x, y| (x - y).abs(),
         }
     }
     pub fn display(&self) -> String {
@@ -76,7 +80,7 @@ impl TestCaseOr {
         s.push_str(&format!("\noutput: [{:.0}]", self.output));
         s
     }
-    pub fn get_all_generic() -> Vec<GenericTestCase> {
+    pub fn get_all_generic() -> Vec<GenericTestCase<Vec<f64>, f64>> {
         TestCaseOr::get_all()
             .iter()
             .map(|x| x.to_generic())
