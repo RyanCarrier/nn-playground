@@ -2,14 +2,13 @@ use crate::{generic_test_case::GenericTestCase, run};
 
 pub fn runner() {
     let test_cases = TestCaseOr::get_all_generic();
-    run::run("pt1, Or", &test_cases, 1..5, 1..7);
+    run::run("Or", &test_cases, 1..3, 2..6);
 }
 #[cfg(test)]
 mod tests {
-    use crate::{
-        network1::{layer::Layer, network, node::Node},
-        pt1::TestCaseOr,
-    };
+    use crate::cases::simple::or::TestCaseOr;
+    use crate::network1::{layer::Layer, network, node::Node};
+    use crate::network_traits::BaseNetwork;
 
     #[test]
     fn known_good() {

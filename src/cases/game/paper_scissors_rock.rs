@@ -4,14 +4,14 @@ use crate::{generic_test_case::GenericGameCase, run_game::run_game};
 
 pub fn runner() {
     run_game(
-        "pt2_5, PaperScissorsRockGame",
+        "Game, PaperScissorsRock",
         &PaperScissorsRockGame::new_empty(),
-        1..5,
-        1..7,
+        3..5,
+        3..7,
     );
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct PaperScissorsRockGame {
     pub input: [usize; 3],
     pub game_complete: bool,

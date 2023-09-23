@@ -1,10 +1,10 @@
-use std::ops::Range;
+use std::{fmt::Debug, ops::Range};
 
 use crate::{
-    generic_test_case::GenericGameCase, network1::network::Network1, pt2_5::PaperScissorsRockGame,
+    generic_test_case::GenericGameCase, network1::network::Network1, network_traits::BaseNetwork,
 };
 
-pub fn run_game<I: Copy>(
+pub fn run_game<I: Copy + Debug>(
     title: &str,
     game: &impl GenericGameCase<I>,
     layers: Range<usize>,
@@ -21,7 +21,7 @@ pub fn run_game<I: Copy>(
     }
 }
 
-pub fn run_game_network<I: Copy>(network: Network1, game: &impl GenericGameCase<I>) {
+pub fn run_game_network<I: Copy + Debug>(network: Network1, game: &impl GenericGameCase<I>) {
     print!(
         "internal layers:\t{},\tinternal nodes:\t{}",
         network.internel_layers(),

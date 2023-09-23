@@ -1,24 +1,23 @@
 use crate::{run, GenericTestCase};
 
 pub fn runner() {
-    let test_cases = TestCaseOrAnd::get_all_generic();
-    run::run("pt2, OrAnd", &test_cases, 1..5, 1..7);
+    let test_cases = TestCaseAnd::get_all_generic();
+    run::run("And", &test_cases, 1..4, 2..6);
 }
-
 #[cfg(test)]
 mod tests {
 
-    use crate::network1::network;
+    use crate::{network1::network, network_traits::BaseNetwork};
 
-    use super::TestCaseOrAnd;
+    use super::TestCaseAnd;
 
     fn default_network() -> network::Network1 {
-        network::Network1::new(3, 1, 4, 1, None)
+        network::Network1::new(2, 1, 3, 2, None)
     }
 
     #[test]
     fn learn() {
-        let test_cases = TestCaseOrAnd::get_all_generic();
+        let test_cases = TestCaseAnd::get_all_generic();
         for _ in 0..20 {
             let mut network = default_network();
             match network.learn(&test_cases, Some(100_000), None) {
@@ -30,17 +29,17 @@ mod tests {
     }
 
     fn test(mut network: network::Network1) {
-        let error = network.test_all(&TestCaseOrAnd::get_all_generic());
+        let test_cases = TestCaseAnd::get_all_generic();
+        let error = network.test_all(&test_cases);
         assert!(error.is_ok());
         assert_eq!(error.unwrap(), 0.0);
     }
 }
-#[derive(Clone, Copy)]
-pub struct TestCaseOrAnd {
-    pub input: [f64; 3],
-    pub output: f64,
+pub struct TestCaseAnd {
+    input: [f64; 2],
+    output: f64,
 }
-impl TestCaseOrAnd {
+impl TestCaseAnd {
     pub fn to_generic(&self) -> GenericTestCase<Vec<f64>, f64> {
         GenericTestCase {
             input: self.input.to_vec(),
@@ -61,29 +60,29 @@ impl TestCaseOrAnd {
         s
     }
     pub fn get_all_generic() -> Vec<GenericTestCase<Vec<f64>, f64>> {
-        TestCaseOrAnd::get_all()
+        TestCaseAnd::get_all()
             .iter()
             .map(|x| x.to_generic())
             .collect()
     }
-    pub fn get_all() -> [TestCaseOrAnd; 8] {
-        let mut result: [TestCaseOrAnd; 8] = [TestCaseOrAnd {
-            input: [0.0, 0.0, 0.0],
-            output: 0.0,
-        }; 8];
-        //k=0 or, k=1 and
-        //haha yeah nice
-        for i in 0..2 {
-            for j in 0..2 {
-                for k in 0..2 {
-                    result[i + (2 * j) + (4 * k)] = TestCaseOrAnd {
-                        input: [i as f64, j as f64, k as f64],
-                        //shoudl probably verify this is correct too...
-                        output: ((!k & (i | j)) | (k & (i & j))) as f64,
-                    };
-                }
-            }
-        }
-        result
+    pub fn get_all() -> [TestCaseAnd; 4] {
+        [
+            TestCaseAnd {
+                input: [0.0, 0.0],
+                output: 1.0,
+            },
+            TestCaseAnd {
+                input: [0.0, 1.0],
+                output: 0.0,
+            },
+            TestCaseAnd {
+                input: [1.0, 0.0],
+                output: 0.0,
+            },
+            TestCaseAnd {
+                input: [1.0, 1.0],
+                output: 1.0,
+            },
+        ]
     }
 }

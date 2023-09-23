@@ -1,23 +1,24 @@
 use crate::{run, GenericTestCase};
 
 pub fn runner() {
-    let test_cases = TestCaseAnd::get_all_generic();
-    run::run("pt1_5, And", &test_cases, 1..5, 1..7);
+    let test_cases = TestCaseTikTakToes::get_all_generic();
+    run::run("Game, TikTakToes", &test_cases, 1..5, 1..7);
 }
+
 #[cfg(test)]
 mod tests {
 
-    use crate::network1::network;
+    use crate::{network1::network, network_traits::BaseNetwork};
 
-    use super::TestCaseAnd;
+    use super::TestCaseTikTakToes;
 
     fn default_network() -> network::Network1 {
-        network::Network1::new(2, 1, 3, 2, None)
+        network::Network1::new(3, 1, 4, 1, None)
     }
 
     #[test]
     fn learn() {
-        let test_cases = TestCaseAnd::get_all_generic();
+        let test_cases = TestCaseTikTakToes::get_all_generic();
         for _ in 0..20 {
             let mut network = default_network();
             match network.learn(&test_cases, Some(100_000), None) {
@@ -29,17 +30,17 @@ mod tests {
     }
 
     fn test(mut network: network::Network1) {
-        let test_cases = TestCaseAnd::get_all_generic();
-        let error = network.test_all(&test_cases);
+        let error = network.test_all(&TestCaseTikTakToes::get_all_generic());
         assert!(error.is_ok());
         assert_eq!(error.unwrap(), 0.0);
     }
 }
-pub struct TestCaseAnd {
-    input: [f64; 2],
-    output: f64,
+#[derive(Clone, Copy)]
+pub struct TestCaseTikTakToes {
+    pub input: [f64; 3],
+    pub output: f64,
 }
-impl TestCaseAnd {
+impl TestCaseTikTakToes {
     pub fn to_generic(&self) -> GenericTestCase<Vec<f64>, f64> {
         GenericTestCase {
             input: self.input.to_vec(),
@@ -60,29 +61,16 @@ impl TestCaseAnd {
         s
     }
     pub fn get_all_generic() -> Vec<GenericTestCase<Vec<f64>, f64>> {
-        TestCaseAnd::get_all()
+        TestCaseTikTakToes::get_all()
             .iter()
             .map(|x| x.to_generic())
             .collect()
     }
-    pub fn get_all() -> [TestCaseAnd; 4] {
-        [
-            TestCaseAnd {
-                input: [0.0, 0.0],
-                output: 1.0,
-            },
-            TestCaseAnd {
-                input: [0.0, 1.0],
-                output: 0.0,
-            },
-            TestCaseAnd {
-                input: [1.0, 0.0],
-                output: 0.0,
-            },
-            TestCaseAnd {
-                input: [1.0, 1.0],
-                output: 1.0,
-            },
-        ]
+    pub fn get_all() -> [TestCaseTikTakToes; 8] {
+        let result: [TestCaseTikTakToes; 8] = [TestCaseTikTakToes {
+            input: [0.0, 0.0, 0.0],
+            output: 0.0,
+        }; 8];
+        result
     }
 }
