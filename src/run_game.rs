@@ -15,7 +15,10 @@ pub fn run_game<I: Copy + Debug>(
     let inputs = game.input_nodes();
     for layer in layers {
         for node in nodes.clone() {
-            run_game_network(Network1::new(inputs, outputs, node, layer, None), game);
+            run_game_network(
+                Network1::new(inputs, outputs, node, layer, Some(|x| x)),
+                game,
+            );
         }
         println!("------");
     }
@@ -35,7 +38,7 @@ pub fn run_game_network<I: Copy + Debug>(network: Network1, game: &impl GenericG
         let learn_errors = match network.learn_game(game, None, None, None) {
             Ok(l) => l,
             Err(e) => {
-                println!("{}", e);
+                println!("run_game_network learn_game error: {}", e);
                 return;
             }
         };

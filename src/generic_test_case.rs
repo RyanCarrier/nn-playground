@@ -27,7 +27,7 @@ pub trait GenericGameCase<I: Copy> {
         &self,
         initial_state: &I,
         network_output: &Vec<f64>,
-    ) -> Result<I, String>;
+    ) -> StateTransform<I>;
 
     fn get_random_initial(&self) -> I;
     fn get_empty_initial(&self) -> I;
@@ -35,6 +35,80 @@ pub trait GenericGameCase<I: Copy> {
     fn output_result(
         &self,
         initial_state: &I,
-        next_state: &Result<I, String>,
-    ) -> Result<(bool, f64, f64), String>;
+        next_state: &StateTransform<I>,
+    ) -> Result<GameResult, String>;
+    fn invalid_move_error(&self, initial_state: &I, network_output: &Vec<f64>) -> f64;
+}
+#[derive(Debug)]
+pub enum StateTransform<State> {
+    Ok(State),
+    Err(InvalidMove<State>),
+}
+
+#[derive(Debug)]
+pub struct InvalidMove<State> {
+    pub state: State,
+    pub error: f64,
+    pub reason: String,
+    pub can_continue: bool,
+}
+impl<T> Into<GameResult> for InvalidMove<T> {
+    fn into(self) -> GameResult {
+        GameResult {
+            game_over: !self.can_continue,
+            error: Some(self.error),
+            //if there is an invalid move, we don't know how 'wrong' the opponent is
+            opponent_error: None,
+        }
+    }
+}
+impl<T> Into<GameResult> for &InvalidMove<T> {
+    fn into(self) -> GameResult {
+        GameResult {
+            game_over: !self.can_continue,
+            error: Some(self.error),
+            //if there is an invalid move, we don't know how 'wrong' the opponent is
+            opponent_error: None,
+        }
+    }
+}
+#[derive(Debug)]
+pub struct GameResult {
+    pub game_over: bool,
+    pub error: Option<f64>,
+    pub opponent_error: Option<f64>,
+}
+impl GameResult {
+    pub fn new(game_over: bool, error: Option<f64>, opponent_error: Option<f64>) -> GameResult {
+        GameResult {
+            game_over,
+            error,
+            opponent_error,
+        }
+    }
+    pub fn win() -> GameResult {
+        GameResult {
+            game_over: true,
+            error: Some(0.0),
+            opponent_error: Some(1.0),
+        }
+    }
+    pub fn loss() -> GameResult {
+        Self::win().swap_errors(true)
+    }
+    pub fn tie() -> GameResult {
+        GameResult {
+            game_over: true,
+            error: Some(0.5),
+            opponent_error: Some(0.5),
+        }
+    }
+    pub fn swap_errors(mut self, swap: bool) -> Self {
+        if swap {
+            let temp = self.error;
+            self.error = self.opponent_error;
+            self.opponent_error = temp;
+        }
+        self
+    }
 }

@@ -1,6 +1,8 @@
 use std::{fmt::Debug, usize::MAX};
 
-use crate::generic_test_case::{GenericGameCase, GenericTestCase};
+use crate::generic_test_case::{
+    GameResult, GenericGameCase, GenericTestCase, InvalidMove, StateTransform,
+};
 
 pub trait BaseNetwork<T: Clone>: Clone {
     fn new(
@@ -123,7 +125,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
     fn test_round<I: Copy>(
         &mut self,
         game: &impl GenericGameCase<I>,
-    ) -> Result<(bool, f64, f64), String> {
+    ) -> Result<GameResult, String> {
         let initial_state = game.get_random_initial();
         let network_input = game.input_transformer(&initial_state);
         let network_output = match self.run(&network_input) {
@@ -149,15 +151,15 @@ pub trait BaseNetwork<T: Clone>: Clone {
         let mut errors: Vec<f64> = Vec::new();
         let mutants = match mutants {
             Some(x) => x,
-            None => 10,
+            None => 6,
         };
         let rounds = match rounds {
             Some(x) => x,
-            None => 100,
+            None => 10,
         };
         let max_iterations = match max_iterations {
             Some(x) => x,
-            None => 10_000,
+            None => 100_000,
         };
         let mut last_rate_change = 0;
         for i in 0..max_iterations {
@@ -169,30 +171,39 @@ pub trait BaseNetwork<T: Clone>: Clone {
                 current_error = 0.0;
                 for i in 0..rounds {
                     match self.run_game(&mut mutant_network, game, None, i % 2 == 0, 4) {
-                        Ok((game_over, error, opponent_error)) => {
-                            if !game_over {
+                        Ok(game_result) => {
+                            if !game_result.game_over {
                                 println!("ERROR GAME SHOULD BE OVER");
                             }
-                            current_error += error;
-                            mutant_error += opponent_error;
+                            current_error += game_result.error.unwrap_or(1.0);
+                            mutant_error += game_result.opponent_error.unwrap_or(1.0);
+                            // println!(
+                            //     "=====learn_game, round: {}, current: {:.2}, mutant: {:.2}",
+                            //     i, current_error, mutant_error
+                            // );
                         }
                         Err(err) => return Err(format!("{}: {}", "learn_game", err)),
                     };
                 }
                 //it's probably better to just waste storage and complexity to RR all the mutants?
                 // or atleast compare with self for the BEST one
+                if i % 10 == 0 {
+                    println!(
+                        "learn_game, current: {:.2}, mutant: {:.2}, rate: {:.3}",
+                        current_error, mutant_error, rate
+                    );
+                }
                 if mutant_error < current_error {
                     println!(
-                        "=====learn_game, current: {:.2}, mutant: {:.2}",
-                        current_error, mutant_error
+                        "=====learn_game, current: {:.2}, mutant: {:.2}, rate: {:.3}",
+                        current_error, mutant_error, rate
                     );
-                    println!("=====learn, rate lowering to {:.3}", rate);
                     self.replace_self(&mut mutant_network);
                     last_rate_change = i;
                     rate *= 0.99;
                 }
             }
-            if i - last_rate_change > 50 {
+            if i - last_rate_change > 100 {
                 println!("=====heating up, rate increasing to {:.3}", rate);
                 last_rate_change = i;
                 rate *= 1.05;
@@ -206,13 +217,20 @@ pub trait BaseNetwork<T: Clone>: Clone {
         &mut self,
         game: &impl GenericGameCase<I>,
         current_state: &I,
-    ) -> Result<I, String> {
+    ) -> StateTransform<I> {
         let network_input = game.input_transformer(&current_state);
         let network_output = match self.run(&network_input) {
             Ok(x) => x,
-            Err(err) => return Err(format!("{}: {}", "run_game", err)),
+            Err(err) => {
+                return StateTransform::Err(InvalidMove {
+                    state: current_state.clone(),
+                    error: game.invalid_move_error(&current_state, &network_input),
+                    reason: format!("{}: {}", "run_game_step", err),
+                    can_continue: false,
+                })
+            }
         };
-        println!("{:?} -> {:?}", current_state, network_output);
+        // println!("{:?} -> {:?}", current_state, network_output);
         let next_state = game.output_state_transformer(&current_state, &network_output);
         next_state
     }
@@ -224,7 +242,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
         initial_state: Option<&I>,
         self_start: bool,
         timeout_rounds: usize,
-    ) -> Result<(bool, f64, f64), String> {
+    ) -> Result<GameResult, String> {
         let initial_state = match initial_state {
             Some(x) => *x,
             None => game.get_empty_initial(),
@@ -241,45 +259,48 @@ pub trait BaseNetwork<T: Clone>: Clone {
         }
         let mut i = 0;
         while i < timeout_rounds {
-            let next_state = network_a.run_game_step(game, &current_state);
-            // println!("{}: {:?} -> {:?}", i, current_state, next_state);
-            let (game_over, error, opponent_error) =
-                match game.output_result(&current_state, &next_state) {
-                    Ok(x) => x,
-                    // Err(err) => return Err(format!("{}: {}", "run_game", err)),
-                    Err(_) => {
-                        if self_start {
-                            return Ok((true, 1.0, 0.0));
-                        }
-                        return Ok((true, 0.0, 1.0));
-                    }
-                };
-            if game_over {
-                if self_start {
-                    return Ok((game_over, error, opponent_error));
+            let next_state: StateTransform<I> = network_a.run_game_step(game, &current_state);
+            // println!(
+            //     "Starting round {}: {:?}, next_state:{:?}",
+            //     i, current_state, next_state
+            // );
+            let game_result: GameResult = match game.output_result(&current_state, &next_state) {
+                Ok(x) => x,
+                Err(_) => {
+                    return Ok(GameResult::new(true, Some(1.0), None).swap_errors(!self_start))
                 }
-                return Ok((game_over, opponent_error, error));
+            };
+            // println!("{}: {:?} -> {:?}", i, current_state, game_result);
+            if game_result.game_over {
+                return Ok(game_result.swap_errors(!self_start));
             }
-            current_state = next_state.unwrap();
+            current_state = match next_state {
+                StateTransform::Ok(state) => state,
+                StateTransform::Err(invalid_move) => {
+                    return Err(format!(
+                        "run_game: Invalid move(should have been caught): {}",
+                        invalid_move.reason
+                    ));
+                }
+            };
             let next_state = network_b.run_game_step(game, &current_state);
-            let (game_over, error, opponent_error) =
-                match game.output_result(&current_state, &next_state) {
-                    Ok(x) => x,
-                    // Err(err) => return Err(format!("{}: {}", "run_game", err)),
-                    Err(_) => {
-                        if self_start {
-                            return Ok((true, 0.0, 1.0));
-                        }
-                        return Ok((true, 1.0, 0.0));
-                    }
-                };
-            if game_over {
-                if self_start {
-                    return Ok((game_over, opponent_error, error));
-                }
-                return Ok((game_over, error, opponent_error));
+            let game_result = match game.output_result(&current_state, &next_state) {
+                Ok(x) => x,
+                Err(_) => return Ok(GameResult::new(true, Some(1.0), None).swap_errors(self_start)),
+            };
+            // println!("{}: {:?} -> {:?}", i, current_state, game_result);
+            if game_result.game_over {
+                return Ok(game_result.swap_errors(self_start));
             }
-            current_state = next_state.unwrap();
+            current_state = match next_state {
+                StateTransform::Ok(state) => state,
+                StateTransform::Err(invalid_move) => {
+                    panic!(
+                        "Invalid move: {}\n this should have already been handled",
+                        invalid_move.reason
+                    );
+                }
+            };
             i += 1;
         }
         Err(format!(
