@@ -1,4 +1,4 @@
-use crate::{generic_test_case::GenericTestCase, run};
+use crate::{run, traits::generic_test_case::GenericTestCase};
 
 pub fn runner() {
     let test_cases = TestCaseOr::get_all_generic();
@@ -8,7 +8,7 @@ pub fn runner() {
 mod tests {
     use crate::cases::simple::or::TestCaseOr;
     use crate::network1::{layer::Layer, network, node::Node};
-    use crate::network_traits::BaseNetwork;
+    use crate::traits::network_traits::BaseNetwork;
 
     #[test]
     fn known_good() {

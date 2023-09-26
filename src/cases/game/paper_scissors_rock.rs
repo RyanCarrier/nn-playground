@@ -1,71 +1,15 @@
 use rand::random;
 
-use crate::{
-    generic_test_case::{GameResult, GenericGameCase, InvalidMove, StateTransform},
-    run_game::run_game,
-};
+use crate::run_game::run_game;
+use crate::traits::generic_game_case::*;
 
 pub fn runner() {
     run_game(
         "Game, PaperScissorsRock",
         &PaperScissorsRockGame::new_empty(),
-        5..7,
+        3..5,
         5..7,
     );
-}
-
-#[cfg(test)]
-mod tests {
-    use super::GenericGameCase;
-    use super::PaperScissorsRockGame;
-
-    struct TestCaseInvalidMove {
-        input: [f64; 3],
-        output: f64,
-    }
-
-    #[test]
-    fn test_paper_scissors_rock() {
-        let test_cases = vec![
-            TestCaseInvalidMove {
-                input: [1.0, 0.0, 0.0],
-                output: 0.0,
-            },
-            TestCaseInvalidMove {
-                input: [0.0, 1.0, 0.0],
-                output: 0.0,
-            },
-            TestCaseInvalidMove {
-                input: [0.0, 0.0, 1.0],
-                output: 0.0,
-            },
-            // bad inputs
-            TestCaseInvalidMove {
-                input: [0.0, 0.0, 0.0],
-                output: 5.0,
-            },
-            // worse inputs
-            TestCaseInvalidMove {
-                input: [1.0, 1.0, 0.0],
-                output: 10.0,
-            },
-            TestCaseInvalidMove {
-                input: [1.0, 1.0, 1.0],
-                output: 20.0,
-            },
-            TestCaseInvalidMove {
-                input: [10.0, 1.0, 1.0],
-                output: 20.0 + (9.0 / 2.0),
-            },
-        ];
-        //max above 1.0 is /2, max under 1.0 is *5
-        //every non max is *10
-        let game = PaperScissorsRockGame::new_empty();
-        for case in test_cases {
-            let result = game.invalid_move_error(&game, &case.input.to_vec());
-            assert_eq!(result, case.output, "input: {:?}", case.input);
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -151,16 +95,16 @@ impl GenericGameCase<PaperScissorsRockGame> for PaperScissorsRockGame {
             .enumerate()
             .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
             .unwrap();
-        if *max < 1.0 {
-            error += (max - 1.0).abs() * 5.0
-        } else {
-            error += (max - 1.0).abs() / 2.0
+        match *max {
+            x if x < 0.5 => error += (x - 1.0).abs() * 5.0,
+            x if x < 1.0 => error += (x - 1.0).abs() * 1.0,
+            x => error += (x - 1.0).abs() * 0.1,
         }
-        network_output.iter().enumerate().for_each(|(i, x)| {
-            if i != max_i {
-                error += x.abs() * 10.0;
-            }
-        });
+        network_output
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| *i != max_i)
+            .for_each(|(_, x)| error += x.abs() / 5.0);
         // println!("invalid move error: {}", error);
         error
     }
@@ -195,5 +139,62 @@ impl GenericGameCase<PaperScissorsRockGame> for PaperScissorsRockGame {
 
     fn input_nodes(&self) -> usize {
         3
+    }
+    fn expected_error(&self) -> f64 {
+        0.5
+    }
+}
+#[cfg(test)]
+mod tests {
+    use crate::traits::generic_game_case::GenericGameCase;
+
+    use super::PaperScissorsRockGame;
+
+    struct TestCaseInvalidMove {
+        input: [f64; 3],
+        output: f64,
+    }
+
+    #[test]
+    fn test_paper_scissors_rock() {
+        let test_cases = vec![
+            TestCaseInvalidMove {
+                input: [1.0, 0.0, 0.0],
+                output: 0.0,
+            },
+            TestCaseInvalidMove {
+                input: [0.0, 1.0, 0.0],
+                output: 0.0,
+            },
+            TestCaseInvalidMove {
+                input: [0.0, 0.0, 1.0],
+                output: 0.0,
+            },
+            // bad inputs
+            TestCaseInvalidMove {
+                input: [0.0, 0.0, 0.0],
+                output: 5.0,
+            },
+            // worse inputs
+            TestCaseInvalidMove {
+                input: [1.0, 1.0, 0.0],
+                output: 10.0,
+            },
+            TestCaseInvalidMove {
+                input: [1.0, 1.0, 1.0],
+                output: 20.0,
+            },
+            TestCaseInvalidMove {
+                input: [10.0, 1.0, 1.0],
+                output: 20.0 + (9.0 / 2.0),
+            },
+        ];
+        //max above 1.0 is /2, max under 1.0 is *5
+        //every non max is *10
+        let game = PaperScissorsRockGame::new_empty();
+        for case in test_cases {
+            let result = game.invalid_move_error(&game, &case.input.to_vec());
+            assert_eq!(result, case.output, "input: {:?}", case.input);
+        }
     }
 }

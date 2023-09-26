@@ -51,13 +51,14 @@ impl Node {
         // for i in 0..inputs.len() {
         //     self.value += inputs[i] * self.paths[i];
         // }
-        self.value = self.value.min(1.0);
+        // self.value = self.value.min(1.0);
         //i think my and one is fucked, becuase removing this bounds seems to
         //break the and one, but the AND one seems broken cause the AND+OR one
         //seems to run better... lol
         Ok(())
     }
     pub fn rand_weights(&mut self, rate: f64) {
+        //-0.5 to 0.5
         fn rand_rate(rate: f64) -> f64 {
             (random::<f64>() - 0.5) * rate
         }

@@ -9,4 +9,7 @@ edition = "2021"
 rand = "0.8.4"
 anyhow = "1.0.44"
 clap = { version = "4.4.4", features = ["derive"] }
+strum = "0.25"
+strum_macros = "0.25"
+
 

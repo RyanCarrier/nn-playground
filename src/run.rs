@@ -1,7 +1,8 @@
 use std::ops::Range;
 
 use crate::{
-    generic_test_case::GenericTestCase, network1::network::Network1, network_traits::BaseNetwork,
+    network1::network::Network1,
+    traits::{generic_test_case::GenericTestCase, network_traits::BaseNetwork},
 };
 
 pub fn run<I, O>(

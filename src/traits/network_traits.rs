@@ -1,8 +1,8 @@
 use std::{fmt::Debug, usize::MAX};
 
-use crate::generic_test_case::{
-    GameResult, GenericGameCase, GenericTestCase, InvalidMove, StateTransform,
-};
+use rand::random;
+
+use super::{generic_game_case::*, generic_test_case::GenericTestCase};
 
 pub trait BaseNetwork<T: Clone>: Clone {
     fn new(
@@ -151,22 +151,34 @@ pub trait BaseNetwork<T: Clone>: Clone {
         let mut errors: Vec<f64> = Vec::new();
         let mutants = match mutants {
             Some(x) => x,
-            None => 6,
+            None => 32,
         };
         let rounds = match rounds {
             Some(x) => x,
-            None => 10,
+            None => 8,
         };
+        if rounds % 2 != 0 {
+            return Err(format!(
+                "rounds must be even, to ensure both networks get to start first (rounds: {})",
+                rounds,
+            ));
+        }
         let max_iterations = match max_iterations {
             Some(x) => x,
-            None => 100_000,
+            None => 10_000,
         };
+        let iterations_for_rate_increase: usize = 500;
         let mut last_rate_change = 0;
+        let perfect_games_error = game.expected_error() * rounds as f64;
+        // let mut last_down_rate_error = 0.0;
+        // let mut last_up_rate_error = 0.0;
         for i in 0..max_iterations {
             let mut current_error = 0.0;
             for _ in 0..mutants {
                 let mut mutant_network = self.clone();
-                mutant_network.rand_weights(rate);
+                //mutant rate of 0.75-1.25
+                let mutant_rate: f64 = (random::<f64>() / 2.0) + 0.5;
+                mutant_network.rand_weights(rate * mutant_rate);
                 let mut mutant_error = 0.0;
                 current_error = 0.0;
                 for i in 0..rounds {
@@ -185,14 +197,21 @@ pub trait BaseNetwork<T: Clone>: Clone {
                         Err(err) => return Err(format!("{}: {}", "learn_game", err)),
                     };
                 }
-                //it's probably better to just waste storage and complexity to RR all the mutants?
-                // or atleast compare with self for the BEST one
-                if i % 10 == 0 {
+                if current_error == perfect_games_error && mutant_error == perfect_games_error {
                     println!(
-                        "learn_game, current: {:.2}, mutant: {:.2}, rate: {:.3}",
+                        "====WE HAVE LEARNT THE GAME=== current: {:.2}, mutant: {:.2}, rate: {:.3}",
                         current_error, mutant_error, rate
                     );
+                    // return Ok(errors);
                 }
+                //it's probably better to just waste storage and complexity to RR all the mutants?
+                // or atleast compare with self for the BEST one
+                // if i % 10 == 0 {
+                //     print!(
+                //         "\rlearn_game, current: {:.2}, mutant: {:.2}, rate: {:.3} ",
+                //         current_error, mutant_error, rate
+                //     );
+                // }
                 if mutant_error < current_error {
                     println!(
                         "=====learn_game, current: {:.2}, mutant: {:.2}, rate: {:.3}",
@@ -203,8 +222,8 @@ pub trait BaseNetwork<T: Clone>: Clone {
                     rate *= 0.99;
                 }
             }
-            if i - last_rate_change > 100 {
-                println!("=====heating up, rate increasing to {:.3}", rate);
+            if i - last_rate_change > iterations_for_rate_increase {
+                // println!("=====heating up, rate increasing to {:.3}", rate);
                 last_rate_change = i;
                 rate *= 1.05;
             }

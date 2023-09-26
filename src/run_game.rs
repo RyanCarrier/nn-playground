@@ -1,8 +1,7 @@
 use std::{fmt::Debug, ops::Range};
 
-use crate::{
-    generic_test_case::GenericGameCase, network1::network::Network1, network_traits::BaseNetwork,
-};
+use crate::traits::network_traits::BaseNetwork;
+use crate::{network1::network::Network1, traits::generic_game_case::GenericGameCase};
 
 pub fn run_game<I: Copy + Debug>(
     title: &str,
@@ -16,7 +15,7 @@ pub fn run_game<I: Copy + Debug>(
     for layer in layers {
         for node in nodes.clone() {
             run_game_network(
-                Network1::new(inputs, outputs, node, layer, Some(|x| x)),
+                Network1::new(inputs, outputs, node, layer, Some(|x| x.round())),
                 game,
             );
         }

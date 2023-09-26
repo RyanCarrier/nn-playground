@@ -1,5 +1,6 @@
-use crate::network_traits::BaseNetwork;
 use anyhow::Result;
+
+use crate::traits::network_traits::BaseNetwork;
 
 use super::layer::Layer;
 
