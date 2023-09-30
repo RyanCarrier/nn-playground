@@ -49,6 +49,7 @@ impl BaseNetwork<Network1> for Network1 {
         self.layers[0].nodes.len()
     }
     fn rand_weights(&mut self, rate: f64) {
+        // println!("[network.rd] applying weights at rate: {}", rate);
         self.layers.iter_mut().for_each(|x| x.rand_weights(rate));
     }
     fn run(&mut self, initial_inputs: &Vec<f64>) -> Result<Vec<f64>, String> {

@@ -137,7 +137,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
     }
 
     //returns the historic learn errors
-    fn learn_game<I: Copy + Debug>(
+    fn learn_game<I: Copy + Debug + ToString>(
         &mut self,
         game: &impl GenericGameCase<I>,
         //mutants, sets how many mutations to try
@@ -163,68 +163,110 @@ pub trait BaseNetwork<T: Clone>: Clone {
                 rounds,
             ));
         }
+        if mutants % 2 != 0 {
+            return Err(format!(
+                "mutants must be even, to ensure learning rate can better figure out to go up or down (mutants: {})",
+                mutants,
+            ));
+        }
         let max_iterations = match max_iterations {
             Some(x) => x,
-            None => 10_000,
+            None => 100_000,
         };
         let iterations_for_rate_increase: usize = 500;
         let mut last_rate_change = 0;
         let perfect_games_error = game.expected_error() * rounds as f64;
         // let mut last_down_rate_error = 0.0;
         // let mut last_up_rate_error = 0.0;
-        for i in 0..max_iterations {
+        for iteration in 0..max_iterations {
             let mut current_error = 0.0;
-            for _ in 0..mutants {
-                let mut mutant_network = self.clone();
-                //mutant rate of 0.75-1.25
-                let mutant_rate: f64 = (random::<f64>() / 2.0) + 0.5;
-                mutant_network.rand_weights(rate * mutant_rate);
+            let mut low_change_mutants = vec![self.clone(); mutants / 2];
+            let mut high_change_mutants = vec![self.clone(); mutants / 2];
+            let mut low_change_mutants_error = vec![0.0; mutants / 2];
+            let mut high_change_mutants_error = vec![0.0; mutants / 2];
+            low_change_mutants
+                .iter_mut()
+                .for_each(|x| x.rand_weights(rate * 0.9));
+            high_change_mutants
+                .iter_mut()
+                .for_each(|x| x.rand_weights(rate * 1.1));
+
+            let mut worst_current_error = 0.0;
+            for i in 0..(mutants / 2) {
                 let mut mutant_error = 0.0;
                 current_error = 0.0;
-                for i in 0..rounds {
-                    match self.run_game(&mut mutant_network, game, None, i % 2 == 0, 4) {
+                for j in 0..rounds {
+                    match self.run_game(&mut low_change_mutants[i], game, None, j % 2 == 0, 10) {
                         Ok(game_result) => {
                             if !game_result.game_over {
                                 println!("ERROR GAME SHOULD BE OVER");
                             }
                             current_error += game_result.error.unwrap_or(1.0);
                             mutant_error += game_result.opponent_error.unwrap_or(1.0);
-                            // println!(
-                            //     "=====learn_game, round: {}, current: {:.2}, mutant: {:.2}",
-                            //     i, current_error, mutant_error
-                            // );
                         }
                         Err(err) => return Err(format!("{}: {}", "learn_game", err)),
                     };
                 }
-                if current_error == perfect_games_error && mutant_error == perfect_games_error {
-                    println!(
-                        "====WE HAVE LEARNT THE GAME=== current: {:.2}, mutant: {:.2}, rate: {:.3}",
-                        current_error, mutant_error, rate
-                    );
-                    // return Ok(errors);
+                low_change_mutants_error[i] = mutant_error;
+                mutant_error = 0.0;
+                if current_error > worst_current_error {
+                    worst_current_error = current_error;
                 }
-                //it's probably better to just waste storage and complexity to RR all the mutants?
-                // or atleast compare with self for the BEST one
-                // if i % 10 == 0 {
-                //     print!(
-                //         "\rlearn_game, current: {:.2}, mutant: {:.2}, rate: {:.3} ",
-                //         current_error, mutant_error, rate
-                //     );
-                // }
-                if mutant_error < current_error {
-                    println!(
-                        "=====learn_game, current: {:.2}, mutant: {:.2}, rate: {:.3}",
-                        current_error, mutant_error, rate
-                    );
-                    self.replace_self(&mut mutant_network);
-                    last_rate_change = i;
-                    rate *= 0.99;
+                for j in 0..rounds {
+                    match self.run_game(&mut high_change_mutants[i], game, None, j % 2 == 0, 10) {
+                        Ok(game_result) => {
+                            if !game_result.game_over {
+                                println!("ERROR GAME SHOULD BE OVER");
+                            }
+                            current_error += game_result.error.unwrap_or(1.0);
+                            mutant_error += game_result.opponent_error.unwrap_or(1.0);
+                        }
+                        Err(err) => return Err(format!("{}: {}", "learn_game", err)),
+                    };
+                }
+                high_change_mutants_error[i] = mutant_error;
+                if current_error > worst_current_error {
+                    worst_current_error = current_error;
+                }
+                let min_low =
+                    low_change_mutants_error
+                        .iter()
+                        .enumerate()
+                        .fold(
+                            (0, 0.0),
+                            |max, (i, &v)| if v > max.1 { (i, v) } else { max },
+                        );
+                let min_high =
+                    high_change_mutants_error
+                        .iter()
+                        .enumerate()
+                        .fold(
+                            (0, 0.0),
+                            |max, (i, &v)| if v > max.1 { (i, v) } else { max },
+                        );
+                if worst_current_error > min_low.1 || worst_current_error > min_high.1 {
+                    if min_low < min_high {
+                        self.replace_self(&mut low_change_mutants[min_low.0]);
+                        last_rate_change = iteration;
+                        rate *= 0.99;
+                        println!(
+                            "found better mutant at low: {}<{}, new rate: {}",
+                            min_low.1, worst_current_error, rate
+                        );
+                    } else {
+                        self.replace_self(&mut high_change_mutants[min_high.0]);
+                        last_rate_change = iteration;
+                        rate *= 1.05;
+                        println!(
+                            "found better mutant at high: {}<{}, new rate: {}",
+                            min_high.1, worst_current_error, rate
+                        );
+                    }
                 }
             }
-            if i - last_rate_change > iterations_for_rate_increase {
-                // println!("=====heating up, rate increasing to {:.3}", rate);
-                last_rate_change = i;
+            if iteration - last_rate_change > iterations_for_rate_increase {
+                println!("=====heating up, rate increasing to {:.3}", rate);
+                last_rate_change = iteration;
                 rate *= 1.05;
             }
             errors.push(current_error);
@@ -250,11 +292,10 @@ pub trait BaseNetwork<T: Clone>: Clone {
             }
         };
         // println!("{:?} -> {:?}", current_state, network_output);
-        let next_state = game.output_state_transformer(&current_state, &network_output);
-        next_state
+        game.output_state_transformer(&current_state, &network_output)
     }
 
-    fn run_game<I: Copy + Debug>(
+    fn run_game<I: Copy + Debug + ToString>(
         &mut self,
         opponent_network: &mut Self,
         game: &impl GenericGameCase<I>,
@@ -277,48 +318,52 @@ pub trait BaseNetwork<T: Clone>: Clone {
             network_b = self;
         }
         let mut i = 0;
+        // println!("{}: \n{}", i, current_state.to_string());
+        enum NextStateResult<I> {
+            Result(Result<GameResult, String>),
+            NextState(I),
+        }
+        let mut handle_next_state = |first_round: bool, current_state: I| -> NextStateResult<I> {
+            let network: &mut Self;
+            network = if first_round { network_a } else { network_b };
+            let transformed_state: StateTransform<I> = network.run_game_step(game, &current_state);
+            let game_result: GameResult =
+                match game.output_result(&current_state, &transformed_state) {
+                    Ok(x) => x,
+                    Err(invalid_move) => {
+                        println!("Finishing game on error: {}", invalid_move);
+                        return NextStateResult::Result(Ok(GameResult::new(true, Some(1.0), None)
+                            .swap_errors(first_round ^ self_start)));
+                    }
+                };
+            // match &transformed_state {
+            //     StateTransform::Ok(s) => println!("{}: OK:\n{}", 0, s.to_string()),
+            //     StateTransform::Err(e) => println!("{}: ERR: \n{}", 0, e.state.to_string()),
+            // }
+            // println!("[{}] {:?}", "run_game", game_result);
+            if game_result.game_over {
+                // println!("{}", current_state.to_string());
+                return NextStateResult::Result(Ok(game_result.swap_errors(!self_start)));
+            }
+            //this should/will never be hit with output_result generally handling invalid moves
+            match transformed_state {
+                StateTransform::Ok(state) => NextStateResult::NextState(state),
+                StateTransform::Err(invalid_move) => NextStateResult::Result(Err(format!(
+                    "run_game: Invalid move(should have been caught): {}",
+                    invalid_move.reason
+                ))),
+            }
+        };
         while i < timeout_rounds {
-            let next_state: StateTransform<I> = network_a.run_game_step(game, &current_state);
-            // println!(
-            //     "Starting round {}: {:?}, next_state:{:?}",
-            //     i, current_state, next_state
-            // );
-            let game_result: GameResult = match game.output_result(&current_state, &next_state) {
-                Ok(x) => x,
-                Err(_) => {
-                    return Ok(GameResult::new(true, Some(1.0), None).swap_errors(!self_start))
-                }
+            // println!("First round");
+            current_state = match handle_next_state(true, current_state) {
+                NextStateResult::Result(game_result) => return game_result,
+                NextStateResult::NextState(next_state) => next_state,
             };
-            // println!("{}: {:?} -> {:?}", i, current_state, game_result);
-            if game_result.game_over {
-                return Ok(game_result.swap_errors(!self_start));
-            }
-            current_state = match next_state {
-                StateTransform::Ok(state) => state,
-                StateTransform::Err(invalid_move) => {
-                    return Err(format!(
-                        "run_game: Invalid move(should have been caught): {}",
-                        invalid_move.reason
-                    ));
-                }
-            };
-            let next_state = network_b.run_game_step(game, &current_state);
-            let game_result = match game.output_result(&current_state, &next_state) {
-                Ok(x) => x,
-                Err(_) => return Ok(GameResult::new(true, Some(1.0), None).swap_errors(self_start)),
-            };
-            // println!("{}: {:?} -> {:?}", i, current_state, game_result);
-            if game_result.game_over {
-                return Ok(game_result.swap_errors(self_start));
-            }
-            current_state = match next_state {
-                StateTransform::Ok(state) => state,
-                StateTransform::Err(invalid_move) => {
-                    panic!(
-                        "Invalid move: {}\n this should have already been handled",
-                        invalid_move.reason
-                    );
-                }
+            // println!("Response round");
+            current_state = match handle_next_state(false, current_state) {
+                NextStateResult::Result(game_result) => return game_result,
+                NextStateResult::NextState(next_state) => next_state,
             };
             i += 1;
         }

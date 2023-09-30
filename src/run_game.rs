@@ -3,7 +3,7 @@ use std::{fmt::Debug, ops::Range};
 use crate::traits::network_traits::BaseNetwork;
 use crate::{network1::network::Network1, traits::generic_game_case::GenericGameCase};
 
-pub fn run_game<I: Copy + Debug>(
+pub fn run_game<I: Copy + Debug + ToString>(
     title: &str,
     game: &impl GenericGameCase<I>,
     layers: Range<usize>,
@@ -15,7 +15,8 @@ pub fn run_game<I: Copy + Debug>(
     for layer in layers {
         for node in nodes.clone() {
             run_game_network(
-                Network1::new(inputs, outputs, node, layer, Some(|x| x.round())),
+                // Network1::new(inputs, outputs, node, layer, Some(|x| x.round())),
+                Network1::new(inputs, outputs, node, layer, None),
                 game,
             );
         }
@@ -23,7 +24,10 @@ pub fn run_game<I: Copy + Debug>(
     }
 }
 
-pub fn run_game_network<I: Copy + Debug>(network: Network1, game: &impl GenericGameCase<I>) {
+pub fn run_game_network<I: Copy + Debug + ToString>(
+    network: Network1,
+    game: &impl GenericGameCase<I>,
+) {
     print!(
         "internal layers:\t{},\tinternal nodes:\t{}",
         network.internel_layers(),

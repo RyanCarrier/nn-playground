@@ -2,7 +2,7 @@ use crate::run_game::run_game;
 use crate::traits::generic_game_case::*;
 
 pub fn runner() {
-    run_game("Game, TikTakToes", &TikTakToes {}, 3..5, 5..7);
+    run_game("Game, TikTakToes", &TikTakToes {}, 1..5, 1..7);
 }
 
 #[derive(PartialEq, Clone, Copy, Debug)]
@@ -22,32 +22,17 @@ impl TikTakToesState {
             board: [[BoardSpace::Empty; 3]; 3],
         }
     }
-    pub fn to_string(&self) -> String {
-        self.board
-            .map(|x| {
-                x.map(|y| match y {
-                    BoardSpace::Empty => ' ',
-                    BoardSpace::X => 'X',
-                    BoardSpace::O => 'O',
-                })
-                .iter()
-                .collect::<String>()
-            })
-            .join("\n")
-    }
     pub fn valid(&self) -> bool {
         let mut x: usize = 0;
         let mut o: usize = 0;
-        let mut e: usize = 0;
         self.board.iter().flatten().for_each(|a| match a {
             BoardSpace::X => x += 1,
             BoardSpace::O => o += 1,
-            BoardSpace::Empty => e += 1,
+            BoardSpace::Empty => (),
         });
         x >= o
-
     }
-    pub fn next_turn(&self) -> BoardSpace{
+    pub fn next_turn(&self) -> BoardSpace {
         let mut x: usize = 0;
         let mut o: usize = 0;
         let mut e: usize = 0;
@@ -56,14 +41,11 @@ impl TikTakToesState {
             BoardSpace::O => o += 1,
             BoardSpace::Empty => e += 1,
         });
-
-        if e>=9 {
-            return BoardSpace::Empty;
+        if x > o {
+            BoardSpace::O
+        } else {
+            BoardSpace::X
         }
-        if x > o{
-            return BoardSpace::O;
-        }
-        return BoardSpace::X;
     }
     pub fn game_over(&self) -> bool {
         self.board
@@ -90,6 +72,21 @@ impl TikTakToesState {
             return self.board[0][2].clone();
         }
         return BoardSpace::Empty;
+    }
+}
+impl ToString for TikTakToesState {
+    fn to_string(&self) -> String {
+        self.board
+            .map(|x| {
+                x.map(|y| match y {
+                    BoardSpace::Empty => '-',
+                    BoardSpace::X => 'X',
+                    BoardSpace::O => 'O',
+                })
+                .iter()
+                .collect::<String>()
+            })
+            .join("\n")
     }
 }
 
@@ -124,12 +121,13 @@ impl GenericGameCase<TikTakToesState> for TikTakToes {
 
     fn output_result(
         &self,
-        initial_state: &TikTakToesState,
+        _initial_state: &TikTakToesState,
         next_state: &StateTransform<TikTakToesState>,
     ) -> Result<GameResult, String> {
         let next_state = match next_state {
             StateTransform::Ok(state) => state,
             StateTransform::Err(invalid_move) => {
+                // println!("Found invalid move {:?}", invalid_move);
                 if !invalid_move.can_continue {
                     return Ok(invalid_move.into());
                 }
@@ -153,6 +151,9 @@ impl GenericGameCase<TikTakToesState> for TikTakToes {
             .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
             .unwrap();
         match *max {
+            //this case should never happen
+            x if x < 0.0 => error += (x - 1.0).abs() * 10.0,
+            //this is more likely
             x if x < 0.5 => error += (x - 1.0).abs() * 5.0,
             x if x < 1.0 => error += (x - 1.0).abs() * 0.5,
             x => error += (x - 1.0).abs() * 0.1,
@@ -162,7 +163,10 @@ impl GenericGameCase<TikTakToesState> for TikTakToes {
             .enumerate()
             .filter(|(i, _)| *i != max_i)
             .for_each(|(_, x)| error += x.abs() / 5.0);
-        // println!("invalid move error: {}", error);
+        if input.board[max_i / 3][max_i % 3] != BoardSpace::Empty {
+            error += 1.0;
+        }
+        // print!("Invalid error: {}\t", error);
         error
     }
 
@@ -171,23 +175,43 @@ impl GenericGameCase<TikTakToesState> for TikTakToes {
         input: &TikTakToesState,
         network_output: &Vec<f64>,
     ) -> StateTransform<TikTakToesState> {
-        let output: Vec<usize> = network_output
-            .iter()
-            .enumerate()
-            .filter(|(_, x)| **x >= 0.5)
-            .map(|(i, _)| i)
-            .collect();
-        // println!("output: {:?}", output);
-        if output.len() != 1 {
+        // let next_move: Vec<usize> = network_output
+        //     .iter()
+        //     .enumerate()
+        //     .filter(|(_, x)| **x >= 0.5)
+        //     .map(|(i, _)| i)
+        //     .collect();
+        // if next_move.len() != 1 {
+        //     return StateTransform::Err(InvalidMove {
+        //         state: input.clone(),
+        //         error: self.invalid_move_error(input, network_output),
+        //         reason: "Output should be a single index".to_string(),
+        //         can_continue: false,
+        //     });
+        // }
+        // let next_move = next_move[0];
+        // print!("[");
+        // network_output.iter().for_each(|x| print!("{:.4}, ", x));
+        // println!("]");
+        let next_move: (usize, f64) = network_output.iter().enumerate().fold(
+            (0, 0.0),
+            |max, (i, &v)| if v > max.1 { (i, v) } else { max },
+        );
+        if next_move.1 < 0.5 {
             return StateTransform::Err(InvalidMove {
                 state: input.clone(),
                 error: self.invalid_move_error(input, network_output),
-                reason: "Output should be a single index".to_string(),
+                reason: format!(
+                    "Output should be atleast higher weight than 0.5 (was {})",
+                    next_move.1
+                ),
                 can_continue: false,
             });
         }
-let next_move_piece = input.next_turn();
-        if input.board[output[0]/3][output[0]%3] != BoardSpace::Empty {
+        let next_move = next_move.0;
+
+        let next_move_piece = input.next_turn();
+        if input.board[next_move / 3][next_move % 3] != BoardSpace::Empty {
             return StateTransform::Err(InvalidMove {
                 state: input.clone(),
                 error: self.invalid_move_error(input, network_output),
@@ -196,19 +220,7 @@ let next_move_piece = input.next_turn();
             });
         }
         let mut output_state = input.clone();
-        output_state.board[output[0]/3][output[0]%3] = next_move_piece;
-        
-        if output[0] > 2 {
-            return StateTransform::Err(InvalidMove {
-                state: input.clone(),
-                error: self.invalid_move_error(input, network_output),
-                reason: "Output should be a single index".to_string(),
-                can_continue: false,
-            });
-        }
-        input.board[output[0]] = BoardSpace::X;
-        let mut next_input: [usize; 3] = [0; 3];
-        next_input[output[0]] = 1;
-        StateTransform::Ok(TikTakToesState { board:  })
+        output_state.board[next_move / 3][next_move % 3] = next_move_piece;
+        StateTransform::Ok(output_state)
     }
 }

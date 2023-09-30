@@ -24,7 +24,7 @@ impl Node {
             old_paths: paths.clone(),
             paths,
             c,
-            old_c: c,
+            old_c: c.clone(),
             value: 0.0,
         }
     }
@@ -65,7 +65,7 @@ impl Node {
         self.old_paths = self.paths.clone();
         self.old_c = self.c.clone();
         self.paths.iter_mut().for_each(|x| {
-            if random::<f64>() > 0.5 {
+            if random::<f64>() < -0.5 {
                 //only update half of them
                 return;
             }
@@ -76,13 +76,14 @@ impl Node {
             // *x = x.min(1.0).max(-1.0);
             // *x = x.min(1.0).max(0.0);
         });
-        if random::<f64>() > 0.5 {
+        if random::<f64>() > -0.5 {
             //only update half of them
             //this one is also fine without bounds
             // self.c = (self.c + rand_rate(rate)).min(1.0).max(-1.0);
-            self.c = self.c + rand_rate(rate);
+            self.c += 0.1 * rand_rate(rate);
         }
-        // println!("old: {:?}, new:{:?}", old, self.paths);
+        // println!("old: {:?}, new:{:?}", self.old_paths, self.paths);
+        // println!("oldc: {:?}, newc:{:?}", self.old_c, self.c);
     }
 
     pub fn revert(&mut self) {

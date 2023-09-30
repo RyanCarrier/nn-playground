@@ -35,6 +35,19 @@ impl PaperScissorsRockGame {
         }
     }
 }
+impl ToString for PaperScissorsRockGame {
+    fn to_string(&self) -> String {
+        format!(
+            "PaperScissorsRockGame: {:?} {}",
+            self.input,
+            if self.game_complete {
+                "complete"
+            } else {
+                "incomplete"
+            }
+        )
+    }
+}
 impl GenericGameCase<PaperScissorsRockGame> for PaperScissorsRockGame {
     fn get_random_initial(&self) -> PaperScissorsRockGame {
         PaperScissorsRockGame::new(random::<usize>() % 3)
@@ -88,7 +101,7 @@ impl GenericGameCase<PaperScissorsRockGame> for PaperScissorsRockGame {
         }
         Ok(GameResult::new(false, Some(0.5), Some(0.5)))
     }
-    fn invalid_move_error(&self, input: &PaperScissorsRockGame, network_output: &Vec<f64>) -> f64 {
+    fn invalid_move_error(&self, _input: &PaperScissorsRockGame, network_output: &Vec<f64>) -> f64 {
         let mut error = 0.0;
         let (max_i, max) = network_output
             .iter()
