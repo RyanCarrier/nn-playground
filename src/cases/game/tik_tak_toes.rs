@@ -45,6 +45,25 @@ impl TikTakToesState {
             BoardSpace::Empty => e += 1,
         });
         x >= o
+
+    }
+    pub fn next_turn(&self) -> BoardSpace{
+        let mut x: usize = 0;
+        let mut o: usize = 0;
+        let mut e: usize = 0;
+        self.board.iter().flatten().for_each(|a| match a {
+            BoardSpace::X => x += 1,
+            BoardSpace::O => o += 1,
+            BoardSpace::Empty => e += 1,
+        });
+
+        if e>=9 {
+            return BoardSpace::Empty;
+        }
+        if x > o{
+            return BoardSpace::O;
+        }
+        return BoardSpace::X;
     }
     pub fn game_over(&self) -> bool {
         self.board
@@ -159,7 +178,7 @@ impl GenericGameCase<TikTakToesState> for TikTakToes {
             .map(|(i, _)| i)
             .collect();
         // println!("output: {:?}", output);
-        if output.len() != 1 || output[0] > 2 {
+        if output.len() != 1 {
             return StateTransform::Err(InvalidMove {
                 state: input.clone(),
                 error: self.invalid_move_error(input, network_output),
@@ -167,8 +186,29 @@ impl GenericGameCase<TikTakToesState> for TikTakToes {
                 can_continue: false,
             });
         }
+let next_move_piece = input.next_turn();
+        if input.board[output[0]/3][output[0]%3] != BoardSpace::Empty {
+            return StateTransform::Err(InvalidMove {
+                state: input.clone(),
+                error: self.invalid_move_error(input, network_output),
+                reason: "Output should be a single index".to_string(),
+                can_continue: false,
+            });
+        }
+        let mut output_state = input.clone();
+        output_state.board[output[0]/3][output[0]%3] = next_move_piece;
+        
+        if output[0] > 2 {
+            return StateTransform::Err(InvalidMove {
+                state: input.clone(),
+                error: self.invalid_move_error(input, network_output),
+                reason: "Output should be a single index".to_string(),
+                can_continue: false,
+            });
+        }
+        input.board[output[0]] = BoardSpace::X;
         let mut next_input: [usize; 3] = [0; 3];
         next_input[output[0]] = 1;
-        StateTransform::Ok(TikTakToesState { input: next_input })
+        StateTransform::Ok(TikTakToesState { board:  })
     }
 }
