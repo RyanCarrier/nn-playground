@@ -1,5 +1,6 @@
 pub trait GenericGameCase<I: Copy> {
     fn input_transformer(&self, input: &I) -> Vec<f64>;
+    fn title(&self) -> &str;
     fn input_nodes(&self) -> usize;
     fn expected_error(&self) -> f64;
     fn output_nodes(&self) -> usize;

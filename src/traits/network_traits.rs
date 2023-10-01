@@ -1,7 +1,5 @@
 use std::{fmt::Debug, usize::MAX};
 
-use rand::random;
-
 use super::{generic_game_case::*, generic_test_case::GenericTestCase};
 
 pub trait BaseNetwork<T: Clone>: Clone {
@@ -157,6 +155,10 @@ pub trait BaseNetwork<T: Clone>: Clone {
             Some(x) => x,
             None => 8,
         };
+        let max_iterations = match max_iterations {
+            Some(x) => x,
+            None => 100_000,
+        };
         if rounds % 2 != 0 {
             return Err(format!(
                 "rounds must be even, to ensure both networks get to start first (rounds: {})",
@@ -169,21 +171,17 @@ pub trait BaseNetwork<T: Clone>: Clone {
                 mutants,
             ));
         }
-        let max_iterations = match max_iterations {
-            Some(x) => x,
-            None => 100_000,
-        };
         let iterations_for_rate_increase: usize = 500;
         let mut last_rate_change = 0;
-        let perfect_games_error = game.expected_error() * rounds as f64;
+        // let perfect_games_error = game.expected_error() * rounds as f64;
         // let mut last_down_rate_error = 0.0;
         // let mut last_up_rate_error = 0.0;
         for iteration in 0..max_iterations {
             let mut current_error = 0.0;
             let mut low_change_mutants = vec![self.clone(); mutants / 2];
             let mut high_change_mutants = vec![self.clone(); mutants / 2];
-            let mut low_change_mutants_error = vec![0.0; mutants / 2];
-            let mut high_change_mutants_error = vec![0.0; mutants / 2];
+            let mut low_change_mutants_error_diff = vec![0.0; mutants / 2];
+            let mut high_change_mutants_error_diff = vec![0.0; mutants / 2];
             low_change_mutants
                 .iter_mut()
                 .for_each(|x| x.rand_weights(rate * 0.9));
@@ -191,7 +189,6 @@ pub trait BaseNetwork<T: Clone>: Clone {
                 .iter_mut()
                 .for_each(|x| x.rand_weights(rate * 1.1));
 
-            let mut worst_current_error = 0.0;
             for i in 0..(mutants / 2) {
                 let mut mutant_error = 0.0;
                 current_error = 0.0;
@@ -201,17 +198,15 @@ pub trait BaseNetwork<T: Clone>: Clone {
                             if !game_result.game_over {
                                 println!("ERROR GAME SHOULD BE OVER");
                             }
-                            current_error += game_result.error.unwrap_or(1.0);
-                            mutant_error += game_result.opponent_error.unwrap_or(1.0);
+                            current_error += game_result.error.unwrap_or(0.0);
+                            mutant_error += game_result.opponent_error.unwrap_or(0.0);
                         }
                         Err(err) => return Err(format!("{}: {}", "learn_game", err)),
                     };
                 }
-                low_change_mutants_error[i] = mutant_error;
+                low_change_mutants_error_diff[i] = mutant_error - current_error;
                 mutant_error = 0.0;
-                if current_error > worst_current_error {
-                    worst_current_error = current_error;
-                }
+                current_error = 0.0;
                 for j in 0..rounds {
                     match self.run_game(&mut high_change_mutants[i], game, None, j % 2 == 0, 10) {
                         Ok(game_result) => {
@@ -224,42 +219,31 @@ pub trait BaseNetwork<T: Clone>: Clone {
                         Err(err) => return Err(format!("{}: {}", "learn_game", err)),
                     };
                 }
-                high_change_mutants_error[i] = mutant_error;
-                if current_error > worst_current_error {
-                    worst_current_error = current_error;
-                }
-                let min_low =
-                    low_change_mutants_error
-                        .iter()
-                        .enumerate()
-                        .fold(
-                            (0, 0.0),
-                            |max, (i, &v)| if v > max.1 { (i, v) } else { max },
-                        );
-                let min_high =
-                    high_change_mutants_error
-                        .iter()
-                        .enumerate()
-                        .fold(
-                            (0, 0.0),
-                            |max, (i, &v)| if v > max.1 { (i, v) } else { max },
-                        );
-                if worst_current_error > min_low.1 || worst_current_error > min_high.1 {
+                high_change_mutants_error_diff[i] = mutant_error - current_error;
+                let min_low = low_change_mutants_error_diff.iter().enumerate().fold(
+                    (0, 0.0),
+                    |max, (i, &v)| if v < max.1 { (i, v) } else { max },
+                );
+                let min_high = high_change_mutants_error_diff.iter().enumerate().fold(
+                    (0, 0.0),
+                    |max, (i, &v)| if v < max.1 { (i, v) } else { max },
+                );
+                if min_low.1.min(min_high.1) < 0.0 {
                     if min_low < min_high {
                         self.replace_self(&mut low_change_mutants[min_low.0]);
                         last_rate_change = iteration;
                         rate *= 0.99;
                         println!(
-                            "found better mutant at low: {}<{}, new rate: {}",
-                            min_low.1, worst_current_error, rate
+                            "found better mutant at low: {:.5}, new rate: {}",
+                            min_low.1, rate
                         );
                     } else {
                         self.replace_self(&mut high_change_mutants[min_high.0]);
                         last_rate_change = iteration;
-                        rate *= 1.05;
+                        rate *= 1.01;
                         println!(
-                            "found better mutant at high: {}<{}, new rate: {}",
-                            min_high.1, worst_current_error, rate
+                            "found better mutant at high: {:.5}, new rate: {}",
+                            min_high.1, rate
                         );
                     }
                 }
@@ -267,7 +251,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
             if iteration - last_rate_change > iterations_for_rate_increase {
                 println!("=====heating up, rate increasing to {:.3}", rate);
                 last_rate_change = iteration;
-                rate *= 1.05;
+                rate *= 1.1;
             }
             errors.push(current_error);
         }

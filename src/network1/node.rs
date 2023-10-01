@@ -16,7 +16,7 @@ impl Node {
         Self::new_paths(vec![default_weight; len])
     }
     pub fn new_default(len: usize) -> Node {
-        Node::new(0.0, len)
+        Node::new(0.5, len)
         // Node::new_path_c(vec![0.0; len], 0.5)
     }
     pub fn new_path_c(paths: Vec<f64>, c: f64) -> Node {
@@ -29,7 +29,7 @@ impl Node {
         }
     }
     pub fn new_paths(paths: Vec<f64>) -> Node {
-        Self::new_path_c(paths, 0.0)
+        Self::new_path_c(paths, 0.1)
     }
     pub fn run(&mut self, inputs: &Vec<f64>) -> Result<(), String> {
         if inputs.len() != self.paths.len() {
@@ -51,7 +51,7 @@ impl Node {
         // for i in 0..inputs.len() {
         //     self.value += inputs[i] * self.paths[i];
         // }
-        // self.value = self.value.min(1.0);
+        self.value = self.value.min(1.0).max(0.0);
         //i think my and one is fucked, becuase removing this bounds seems to
         //break the and one, but the AND one seems broken cause the AND+OR one
         //seems to run better... lol

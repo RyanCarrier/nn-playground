@@ -2,7 +2,7 @@ use crate::run_game::run_game;
 use crate::traits::generic_game_case::*;
 
 pub fn runner() {
-    run_game("Game, TikTakToes", &TikTakToes {}, 1..5, 1..7);
+    run_game("Game, TikTakToes", &TikTakToes {}, 10..11, 10..11);
 }
 
 #[derive(PartialEq, Clone, Copy, Debug)]
@@ -22,6 +22,7 @@ impl TikTakToesState {
             board: [[BoardSpace::Empty; 3]; 3],
         }
     }
+    #[allow(dead_code)]
     pub fn valid(&self) -> bool {
         let mut x: usize = 0;
         let mut o: usize = 0;
@@ -94,6 +95,9 @@ impl ToString for TikTakToesState {
 pub struct TikTakToes;
 
 impl GenericGameCase<TikTakToesState> for TikTakToes {
+    fn title(&self) -> &str {
+        "TikTakToes"
+    }
     fn get_random_initial(&self) -> TikTakToesState {
         todo!();
     }
@@ -166,7 +170,7 @@ impl GenericGameCase<TikTakToesState> for TikTakToes {
         if input.board[max_i / 3][max_i % 3] != BoardSpace::Empty {
             error += 1.0;
         }
-        // print!("Invalid error: {}\t", error);
+        // print!("Invalid error max: {:.2}\t", max);
         error
     }
 

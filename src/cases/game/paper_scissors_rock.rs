@@ -49,6 +49,9 @@ impl ToString for PaperScissorsRockGame {
     }
 }
 impl GenericGameCase<PaperScissorsRockGame> for PaperScissorsRockGame {
+    fn title(&self) -> &str {
+        "PaperScissorsRock"
+    }
     fn get_random_initial(&self) -> PaperScissorsRockGame {
         PaperScissorsRockGame::new(random::<usize>() % 3)
     }
