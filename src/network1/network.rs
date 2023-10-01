@@ -31,7 +31,8 @@ impl BaseNetwork<Network1> for Network1 {
             },
             output_fn: match output_fn {
                 Some(x) => x,
-                None => |x| x.min(1.0).max(0.0),
+                // None => |x| x.min(1.0).max(0.0),
+                None => |x| x.max(0.0),
                 // None => |x| x,
             },
         }

@@ -1,4 +1,4 @@
-pub trait GenericGameCase<I: Copy> {
+pub trait GenericGameCase<I: Clone> {
     fn input_transformer(&self, input: &I) -> Vec<f64>;
     fn title(&self) -> &str;
     fn input_nodes(&self) -> usize;
@@ -32,6 +32,7 @@ pub struct InvalidMove<State> {
     pub error: f64,
     pub reason: String,
     pub can_continue: bool,
+    pub network_output: Vec<f64>,
 }
 impl<T> Into<GameResult> for InvalidMove<T> {
     fn into(self) -> GameResult {

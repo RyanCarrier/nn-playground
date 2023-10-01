@@ -20,6 +20,21 @@ pub trait BaseNetwork<T: Clone>: Clone {
     fn revert(&mut self);
     fn replace_self(&mut self, other: &mut Self);
 
+    fn new_from_game<Game: Copy>(
+        game: &impl GenericGameCase<Game>,
+        internal_nodes: usize,
+        internal_layers: usize,
+        output_fn: Option<fn(f64) -> f64>,
+    ) -> T {
+        Self::new(
+            game.input_nodes(),
+            game.output_nodes(),
+            internal_nodes,
+            internal_layers,
+            output_fn,
+        )
+    }
+
     fn test<I, O>(&mut self, test_case: &GenericTestCase<I, O>) -> Result<f64, String> {
         let result = match self.run(&test_case.get_input()) {
             Ok(x) => x,
@@ -120,7 +135,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
     ///
     /// Also this should be self not mut, we shouldn't store values in nodes, that's how we would
     /// turn this more matricie like too
-    fn test_round<I: Copy>(
+    fn test_round<I: Clone>(
         &mut self,
         game: &impl GenericGameCase<I>,
     ) -> Result<GameResult, String> {
@@ -135,7 +150,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
     }
 
     //returns the historic learn errors
-    fn learn_game<I: Copy + Debug + ToString>(
+    fn learn_game<I: Clone + Debug + ToString>(
         &mut self,
         game: &impl GenericGameCase<I>,
         //mutants, sets how many mutations to try
@@ -160,16 +175,10 @@ pub trait BaseNetwork<T: Clone>: Clone {
             None => 100_000,
         };
         if rounds % 2 != 0 {
-            return Err(format!(
-                "rounds must be even, to ensure both networks get to start first (rounds: {})",
-                rounds,
-            ));
+            return Err(format!("rounds must be even (rounds: {})", rounds));
         }
         if mutants % 2 != 0 {
-            return Err(format!(
-                "mutants must be even, to ensure learning rate can better figure out to go up or down (mutants: {})",
-                mutants,
-            ));
+            return Err(format!("mutants must be even (mutants: {})", mutants));
         }
         let iterations_for_rate_increase: usize = 500;
         let mut last_rate_change = 0;
@@ -184,10 +193,10 @@ pub trait BaseNetwork<T: Clone>: Clone {
             let mut high_change_mutants_error_diff = vec![0.0; mutants / 2];
             low_change_mutants
                 .iter_mut()
-                .for_each(|x| x.rand_weights(rate * 0.9));
+                .for_each(|x| x.rand_weights(rate * 0.8));
             high_change_mutants
                 .iter_mut()
-                .for_each(|x| x.rand_weights(rate * 1.1));
+                .for_each(|x| x.rand_weights(rate * 1.2));
 
             for i in 0..(mutants / 2) {
                 let mut mutant_error = 0.0;
@@ -198,8 +207,8 @@ pub trait BaseNetwork<T: Clone>: Clone {
                             if !game_result.game_over {
                                 println!("ERROR GAME SHOULD BE OVER");
                             }
-                            current_error += game_result.error.unwrap_or(0.0);
-                            mutant_error += game_result.opponent_error.unwrap_or(0.0);
+                            current_error += game_result.error.unwrap_or(0.5);
+                            mutant_error += game_result.opponent_error.unwrap_or(0.5);
                         }
                         Err(err) => return Err(format!("{}: {}", "learn_game", err)),
                     };
@@ -213,8 +222,8 @@ pub trait BaseNetwork<T: Clone>: Clone {
                             if !game_result.game_over {
                                 println!("ERROR GAME SHOULD BE OVER");
                             }
-                            current_error += game_result.error.unwrap_or(1.0);
-                            mutant_error += game_result.opponent_error.unwrap_or(1.0);
+                            current_error += game_result.error.unwrap_or(0.0);
+                            mutant_error += game_result.opponent_error.unwrap_or(0.0);
                         }
                         Err(err) => return Err(format!("{}: {}", "learn_game", err)),
                     };
@@ -229,10 +238,10 @@ pub trait BaseNetwork<T: Clone>: Clone {
                     |max, (i, &v)| if v < max.1 { (i, v) } else { max },
                 );
                 if min_low.1.min(min_high.1) < 0.0 {
-                    if min_low < min_high {
+                    if min_low.1 < min_high.1 {
                         self.replace_self(&mut low_change_mutants[min_low.0]);
                         last_rate_change = iteration;
-                        rate *= 0.99;
+                        rate *= 0.9999;
                         println!(
                             "found better mutant at low: {:.5}, new rate: {}",
                             min_low.1, rate
@@ -240,7 +249,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
                     } else {
                         self.replace_self(&mut high_change_mutants[min_high.0]);
                         last_rate_change = iteration;
-                        rate *= 1.01;
+                        rate *= 1.0001;
                         println!(
                             "found better mutant at high: {:.5}, new rate: {}",
                             min_high.1, rate
@@ -248,17 +257,24 @@ pub trait BaseNetwork<T: Clone>: Clone {
                     }
                 }
             }
-            if iteration - last_rate_change > iterations_for_rate_increase {
-                println!("=====heating up, rate increasing to {:.3}", rate);
+            if (iteration - last_rate_change) > iterations_for_rate_increase {
+                println!(
+                    "=====heating up ({}), rate increasing to {:.3}",
+                    iteration, rate
+                );
                 last_rate_change = iteration;
                 rate *= 1.1;
             }
             errors.push(current_error);
+            if rate < 0.0000001 {
+                println!("Rate is low enough, finishing at {}", iteration);
+                break;
+            }
         }
         Ok(errors)
     }
 
-    fn run_game_step<I: Copy + Debug>(
+    fn run_game_step<I: Clone + Debug>(
         &mut self,
         game: &impl GenericGameCase<I>,
         current_state: &I,
@@ -272,6 +288,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
                     error: game.invalid_move_error(&current_state, &network_input),
                     reason: format!("{}: {}", "run_game_step", err),
                     can_continue: false,
+                    network_output: network_input,
                 })
             }
         };
@@ -279,7 +296,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
         game.output_state_transformer(&current_state, &network_output)
     }
 
-    fn run_game<I: Copy + Debug + ToString>(
+    fn run_game<I: Clone + Debug + ToString>(
         &mut self,
         opponent_network: &mut Self,
         game: &impl GenericGameCase<I>,
@@ -288,7 +305,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
         timeout_rounds: usize,
     ) -> Result<GameResult, String> {
         let initial_state = match initial_state {
-            Some(x) => *x,
+            Some(x) => x.clone(),
             None => game.get_empty_initial(),
         };
         let mut current_state = initial_state.clone();

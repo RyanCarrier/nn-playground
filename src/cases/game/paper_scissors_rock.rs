@@ -143,6 +143,7 @@ impl GenericGameCase<PaperScissorsRockGame> for PaperScissorsRockGame {
                 error: self.invalid_move_error(input, network_output),
                 reason: "Output should be a single index".to_string(),
                 can_continue: false,
+                network_output: network_output.clone(),
             });
         }
         let mut next_input: [usize; 3] = [0; 3];

@@ -1,6 +1,9 @@
+use cases::game::{play::play_game, tik_tak_toes::TikTakToes};
 use clap::{Args, Parser, Subcommand};
+use network1::network::Network1;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
+use traits::network_traits::BaseNetwork;
 
 mod cases;
 mod network1;
@@ -18,6 +21,7 @@ struct Cli {
 #[derive(Debug, Subcommand)]
 enum Runner {
     Game(GameArgs),
+    PlayGame(GameArgs),
     Data(DataArgs),
 }
 
@@ -58,6 +62,15 @@ fn run_with(runner: Option<Runner>) {
             Some(GameSet::PaperScissorsRock) => cases::game::paper_scissors_rock::runner(),
             None => GameSet::iter()
                 .for_each(|x| run_with(Some(Runner::Game(GameArgs { data: Some(x) })))),
+        },
+        Some(Runner::PlayGame(g)) => match g.data {
+            Some(GameSet::TikTakToes) => {
+                let game = TikTakToes;
+                let mut network = Network1::new_from_game(&game, 10,10,None);
+                play_game(game, &mut network);
+            }
+            Some(GameSet::PaperScissorsRock) => cases::game::paper_scissors_rock::runner(),
+            None => panic!("we need to specify which game to play... this should also be done in clap not panic"),        
         },
         Some(Runner::Data(d)) => match d.data {
             Some(DataSet::Or) => cases::simple::or::runner(),

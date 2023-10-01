@@ -16,7 +16,7 @@ impl Node {
         Self::new_paths(vec![default_weight; len])
     }
     pub fn new_default(len: usize) -> Node {
-        Node::new(0.5, len)
+        Node::new(0.0, len)
         // Node::new_path_c(vec![0.0; len], 0.5)
     }
     pub fn new_path_c(paths: Vec<f64>, c: f64) -> Node {
@@ -29,7 +29,7 @@ impl Node {
         }
     }
     pub fn new_paths(paths: Vec<f64>) -> Node {
-        Self::new_path_c(paths, 0.1)
+        Self::new_path_c(paths, 0.0)
     }
     pub fn run(&mut self, inputs: &Vec<f64>) -> Result<(), String> {
         if inputs.len() != self.paths.len() {
@@ -80,6 +80,7 @@ impl Node {
             //only update half of them
             //this one is also fine without bounds
             // self.c = (self.c + rand_rate(rate)).min(1.0).max(-1.0);
+            // self.c += 0.1 * rand_rate(rate);
             self.c += 0.1 * rand_rate(rate);
         }
         // println!("old: {:?}, new:{:?}", self.old_paths, self.paths);

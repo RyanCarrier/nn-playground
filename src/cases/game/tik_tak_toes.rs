@@ -4,6 +4,12 @@ use crate::traits::generic_game_case::*;
 pub fn runner() {
     run_game("Game, TikTakToes", &TikTakToes {}, 10..11, 10..11);
 }
+pub fn game_test() {
+    //this is where I'm going to test various specific network outputs and seeing what we end
+    //up at.
+    //I'm not sure if we need exact tests for this as we are still activaly changin it
+    //I more just want to see what's going on and figure out why it's not working
+}
 
 #[derive(PartialEq, Clone, Copy, Debug)]
 #[repr(u8)]
@@ -80,7 +86,7 @@ impl ToString for TikTakToesState {
         self.board
             .map(|x| {
                 x.map(|y| match y {
-                    BoardSpace::Empty => '-',
+                    BoardSpace::Empty => '_',
                     BoardSpace::X => 'X',
                     BoardSpace::O => 'O',
                 })
@@ -156,17 +162,22 @@ impl GenericGameCase<TikTakToesState> for TikTakToes {
             .unwrap();
         match *max {
             //this case should never happen
-            x if x < 0.0 => error += (x - 1.0).abs() * 10.0,
+            x if x < 0.0 => error += (x - 1.0).abs() * 0.1,
             //this is more likely
-            x if x < 0.5 => error += (x - 1.0).abs() * 5.0,
-            x if x < 1.0 => error += (x - 1.0).abs() * 0.5,
+            x if x < 0.5 => error += (x - 1.0).abs() * 0.05,
+            x if x < 1.0 => error += (x - 1.0).abs() * 0.005,
             x => error += (x - 1.0).abs() * 0.1,
         }
         network_output
             .iter()
             .enumerate()
             .filter(|(i, _)| *i != max_i)
-            .for_each(|(_, x)| error += x.abs() / 5.0);
+            .for_each(|(_, x)| {
+                error += x.abs() / 5.0;
+                if x == max {
+                    error += 5.0;
+                }
+            });
         if input.board[max_i / 3][max_i % 3] != BoardSpace::Empty {
             error += 1.0;
         }
@@ -210,6 +221,7 @@ impl GenericGameCase<TikTakToesState> for TikTakToes {
                     next_move.1
                 ),
                 can_continue: false,
+                network_output: network_output.clone(),
             });
         }
         let next_move = next_move.0;
@@ -219,8 +231,9 @@ impl GenericGameCase<TikTakToesState> for TikTakToes {
             return StateTransform::Err(InvalidMove {
                 state: input.clone(),
                 error: self.invalid_move_error(input, network_output),
-                reason: "Output should be a single index".to_string(),
+                reason: format!("Output board move space is not empty ({})", next_move),
                 can_continue: false,
+                network_output: network_output.clone(),
             });
         }
         let mut output_state = input.clone();
