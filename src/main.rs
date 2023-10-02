@@ -12,7 +12,7 @@ mod run_game;
 mod traits;
 
 #[derive(Parser, Debug)]
-#[command(name = "nn")]
+// #[command(name = "nn")]
 struct Cli {
     #[command(subcommand)]
     runner: Option<Runner>,
@@ -35,6 +35,7 @@ struct GameArgs {
 enum GameSet {
     PaperScissorsRock,
     TikTakToes,
+    TikTakToesTest,
 }
 
 #[derive(Debug, Args)]
@@ -59,6 +60,7 @@ fn run_with(runner: Option<Runner>) {
     match runner {
         Some(Runner::Game(g)) => match g.data {
             Some(GameSet::TikTakToes) => cases::game::tik_tak_toes::runner(),
+            Some(GameSet::TikTakToesTest) => cases::game::tik_tak_toes::game_test(),
             Some(GameSet::PaperScissorsRock) => cases::game::paper_scissors_rock::runner(),
             None => GameSet::iter()
                 .for_each(|x| run_with(Some(Runner::Game(GameArgs { data: Some(x) })))),
@@ -69,6 +71,7 @@ fn run_with(runner: Option<Runner>) {
                 let mut network = Network1::new_from_game(&game, 10,10,None);
                 play_game(game, &mut network);
             }
+            Some(GameSet::TikTakToesTest) => panic!("not implemented"),
             Some(GameSet::PaperScissorsRock) => cases::game::paper_scissors_rock::runner(),
             None => panic!("we need to specify which game to play... this should also be done in clap not panic"),        
         },

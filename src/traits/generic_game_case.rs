@@ -25,6 +25,32 @@ pub enum StateTransform<State> {
     Ok(State),
     Err(InvalidMove<State>),
 }
+impl<State> StateTransform<State> {
+    pub const fn is_ok(&self) -> bool {
+        match self {
+            StateTransform::Ok(_) => true,
+            StateTransform::Err(_) => false,
+        }
+    }
+    pub const fn is_err(&self) -> bool {
+        match self {
+            StateTransform::Ok(_) => false,
+            StateTransform::Err(_) => true,
+        }
+    }
+    pub fn unwrap(self) -> State {
+        match self {
+            StateTransform::Ok(s) => s,
+            StateTransform::Err(e) => e.state,
+        }
+    }
+    pub fn unwrap_err(self) -> InvalidMove<State> {
+        match self {
+            StateTransform::Ok(_) => panic!("Called unwrap_err on Ok"),
+            StateTransform::Err(e) => e,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct InvalidMove<State> {
