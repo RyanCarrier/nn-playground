@@ -25,6 +25,7 @@ pub enum StateTransform<State> {
     Ok(State),
     Err(InvalidMove<State>),
 }
+#[allow(dead_code)]
 impl<State> StateTransform<State> {
     pub const fn is_ok(&self) -> bool {
         match self {

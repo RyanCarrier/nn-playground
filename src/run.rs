@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use crate::{
-    network1::network::Network1,
+    networks::network1::network::Network1,
     traits::{generic_test_case::GenericTestCase, network_traits::BaseNetwork},
 };
 

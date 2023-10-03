@@ -7,7 +7,7 @@ pub fn runner() {
 #[cfg(test)]
 mod tests {
     use crate::cases::simple::or::TestCaseOr;
-    use crate::network1::{layer::Layer, network, node::Node};
+    use crate::networks::network1::{layer::Layer, network, node::Node};
     use crate::traits::network_traits::BaseNetwork;
 
     #[test]

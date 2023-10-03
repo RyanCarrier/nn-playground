@@ -1,12 +1,12 @@
 use cases::game::{play::play_game, tik_tak_toes::TikTakToes};
 use clap::{Args, Parser, Subcommand};
-use network1::network::Network1;
+use networks::network1::network::Network1;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use traits::network_traits::BaseNetwork;
 
 mod cases;
-mod network1;
+mod networks;
 mod run;
 mod run_game;
 mod traits;
@@ -16,6 +16,8 @@ mod traits;
 struct Cli {
     #[command(subcommand)]
     runner: Option<Runner>,
+    #[clap(short, long)]
+    network: Option<usize>,
 }
 
 #[derive(Debug, Subcommand)]

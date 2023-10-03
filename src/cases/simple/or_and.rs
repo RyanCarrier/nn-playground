@@ -8,7 +8,7 @@ pub fn runner() {
 #[cfg(test)]
 mod tests {
 
-    use crate::{network1::network, traits::network_traits::BaseNetwork};
+    use crate::{networks::network1::network, traits::network_traits::BaseNetwork};
 
     use super::TestCaseOrAnd;
 

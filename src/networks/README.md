@@ -63,4 +63,12 @@ I don't even know, just gave it some layers and nodes and it just worked tbh
 
 ## pt 5
 
-Can go to matricies by not storing value in each, cause value would be returned, then would just add to matricie, that's how
+Can go to matricies by not storjjing value in each, cause value would be returned, then would just add to matricie, that's how
+
+## pt 6
+
+Ok pausing on the game side but watched some videos mainly from 3Blue1Brown up until pt 3;
+
+(https://www.youtube.com/watch?v=Ilg3gGewQ5U)[link]
+
+going to just go ahead and make different networks now, first with just matricies and stuff, then with an attempt of back prop (and also changing c to bias lol)

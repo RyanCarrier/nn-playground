@@ -1,7 +1,7 @@
 use std::{fmt::Debug, ops::Range};
 
 use crate::traits::network_traits::BaseNetwork;
-use crate::{network1::network::Network1, traits::generic_game_case::GenericGameCase};
+use crate::{networks::network1::network::Network1, traits::generic_game_case::GenericGameCase};
 
 pub fn run_game<I: Copy + Debug + ToString>(
     title: &str,

@@ -1,5 +1,3 @@
-use anyhow::Result;
-
 use crate::traits::network_traits::BaseNetwork;
 
 use super::layer::Layer;
@@ -53,42 +51,49 @@ impl BaseNetwork<Network1> for Network1 {
         // println!("[network.rd] applying weights at rate: {}", rate);
         self.layers.iter_mut().for_each(|x| x.rand_weights(rate));
     }
-    fn run(&mut self, initial_inputs: &Vec<f64>) -> Result<Vec<f64>, String> {
-        if self.layers.len() == 0 {
-            return Err("Network: Can not run network with zero layers".to_string());
-        }
-        if self.layers[0].nodes.len() == 0 {
-            return Err("Network: Can not run network with zero nodes".to_string());
-        }
-        if self.layers[0].nodes[0].paths.len() == 0 {
-            return Err("Network: Can not run network with zero paths".to_string());
-        }
-        if initial_inputs.len() != self.layers[0].nodes[0].paths.len() {
-            return Err(format!(
-                "{}: initial_inputs {} != layers.first.len {})",
-                "Network::run",
-                initial_inputs.len(),
-                self.layers[0].nodes.len()
-            ));
-        }
-        self.layers[0].run(&initial_inputs)?;
+    fn run(&mut self, initial_inputs: Vec<f64>) -> Vec<f64> {
+        // if self.layers.len() == 0 {
+        //     return Err("Network: Can not run network with zero layers".to_string());
+        // }
+        // if self.layers[0].nodes.len() == 0 {
+        //     return Err("Network: Can not run network with zero nodes".to_string());
+        // }
+        // if self.layers[0].nodes[0].paths.len() == 0 {
+        //     return Err("Network: Can not run network with zero paths".to_string());
+        // }
+        // if initial_inputs.len() != self.layers[0].nodes[0].paths.len() {
+        //     return Err(format!(
+        //         "{}: initial_inputs {} != layers.first.len {})",
+        //         "Network::run",
+        //         initial_inputs.len(),
+        //         self.layers[0].nodes.len()
+        //     ));
+        // }
+        let _ = self.layers[0].run(&initial_inputs);
         for i in 1..self.layers.len() {
             let inputs = &self.layers[i - 1]
                 .nodes
                 .iter()
                 .map(|x| x.value)
                 .collect::<Vec<f64>>();
-            self.layers[i].run(inputs)?;
+            let _ = self.layers[i].run(inputs);
         }
         let output_fn = self.output_fn;
-        match self.layers.last() {
-            Some(x) => Ok(x
-                .nodes
-                .iter()
-                .map(|x| output_fn(x.value))
-                .collect::<Vec<f64>>()),
-            None => Err("self.layers.last() returned None".to_string()),
-        }
+        // match self.layers.last() {
+        //     Some(x) => Ok(x
+        //         .nodes
+        //         .iter()
+        //         .map(|x| output_fn(x.value))
+        //         .collect::<Vec<f64>>()),
+        //     None => Err("self.layers.last() returned None".to_string()),
+        // }
+        self.layers
+            .last()
+            .unwrap()
+            .nodes
+            .iter()
+            .map(|x| output_fn(x.value))
+            .collect::<Vec<f64>>()
     }
 
     fn revert(&mut self) {

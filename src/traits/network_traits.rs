@@ -13,7 +13,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
     fn internel_layers(&self) -> usize;
     fn internal_nodes(&self) -> usize;
     fn rand_weights(&mut self, rate: f64);
-    fn run(&mut self, initial_inputs: &Vec<f64>) -> Result<Vec<f64>, String>;
+    fn run(&mut self, initial_inputs: Vec<f64>) -> Vec<f64>;
 
     //result is the value compared to previous success rate, 1.0 would be same as previous
     // result is a ratio (higher is better)
@@ -36,10 +36,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
     }
 
     fn test<I, O>(&mut self, test_case: &GenericTestCase<I, O>) -> Result<f64, String> {
-        let result = match self.run(&test_case.get_input()) {
-            Ok(x) => x,
-            Err(err) => return Err(format!("{}: {}", "test", err)),
-        };
+        let result = self.run(test_case.get_input());
         let result_difference: f64 = test_case.result_error((test_case.output_transformer)(result));
         Ok(result_difference)
     }
@@ -58,10 +55,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
     fn print_all<I, O>(&mut self, test_cases: &Vec<GenericTestCase<I, O>>) -> Result<(), String> {
         let cases_len = test_cases.len();
         for i in 0..cases_len {
-            let result = match self.run(&test_cases[i].get_input()) {
-                Ok(x) => x,
-                Err(err) => return Err(format!("{}: {}", "print_all", err)),
-            };
+            let result = self.run(test_cases[i].get_input());
             println!("===case {}===\n{}", i, &test_cases[i].display);
             println!(
                 "test_result: [{}], diff: [{}]",
@@ -141,10 +135,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
     ) -> Result<GameResult, String> {
         let initial_state = game.get_random_initial();
         let network_input = game.input_transformer(&initial_state);
-        let network_output = match self.run(&network_input) {
-            Ok(x) => x,
-            Err(err) => return Err(format!("{}: {}", "test", err)),
-        };
+        let network_output = self.run(network_input);
         let result = game.output_state_transformer(&initial_state, &network_output);
         game.output_result(&initial_state, &result)
     }
@@ -280,18 +271,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
         current_state: &I,
     ) -> StateTransform<I> {
         let network_input = game.input_transformer(&current_state);
-        let network_output = match self.run(&network_input) {
-            Ok(x) => x,
-            Err(err) => {
-                return StateTransform::Err(InvalidMove {
-                    state: current_state.clone(),
-                    error: game.invalid_move_error(&current_state, &network_input),
-                    reason: format!("{}: {}", "run_game_step", err),
-                    can_continue: false,
-                    network_output: network_input,
-                })
-            }
-        };
+        let network_output = self.run(network_input);
         // println!("{:?} -> {:?}", current_state, network_output);
         game.output_state_transformer(&current_state, &network_output)
     }

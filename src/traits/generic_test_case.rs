@@ -18,4 +18,3 @@ impl<I, O> GenericTestCase<I, O> {
         (self.output_error)(&self.output, &result)
     }
 }
-
