@@ -38,6 +38,7 @@ impl BaseNetwork for Network1 {
             },
         }
     }
+    fn learn_from_results(&mut self, results: Vec<Vec<f64>>, expected: Vec<Vec<f64>>, rate: f64) {}
     fn replace_self(&mut self, other: &mut Self) {
         self.layers = other.layers.clone();
     }

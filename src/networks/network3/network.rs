@@ -37,7 +37,18 @@ impl BaseNetwork for Network2 {
             },
         }
     }
-    fn learn_from_results(&mut self, results: Vec<Vec<f64>>, expected: Vec<Vec<f64>>, rate: f64) {}
+    fn learn_from_results(&mut self, results: Vec<Vec<f64>>, expected: Vec<Vec<f64>>, rate: f64) {
+        let mut difference: Vec<f64> = vec![0.0; results.len()];
+        for i in 0..results.len() {
+            difference[i] = (expected[i]
+                .iter()
+                .zip(results[i].iter())
+                .map(|(x, y)| (x - y).powi(2))
+                .sum::<f64>()
+                / expected[i].len() as f64)
+                * rate;
+        }
+    }
     fn replace_self(&mut self, other: &mut Self) {
         self.layers = other.layers.clone();
     }
@@ -53,6 +64,7 @@ impl BaseNetwork for Network2 {
     fn rand_weights(&mut self, rate: f64) {
         self.layers.iter_mut().for_each(|x| x.rand_weights(rate));
     }
+
     fn run(&mut self, initial_inputs: Vec<f64>) -> Vec<f64> {
         self.layers
             .iter()
