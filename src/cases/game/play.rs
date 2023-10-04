@@ -7,8 +7,7 @@ use std::time::Duration;
 pub fn play_game<
     GameState: Clone + Debug + ToString,
     GameCase: GenericGameCase<GameState>,
-    N: Clone,
-    Network: BaseNetwork<N>,
+    Network: BaseNetwork,
 >(
     game: GameCase,
     network: &mut Network,

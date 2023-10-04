@@ -1,15 +1,14 @@
-use cases::game::{play::play_game, tik_tak_toes::TikTakToes};
 use clap::{Args, Parser, Subcommand};
-use networks::network1::network::Network1;
+use nn_playground::{
+    cases::{
+        self,
+        game::{play::play_game, tik_tak_toes::TikTakToes},
+    },
+    networks::{network1::network::Network1, Networks},
+    traits::{generic_game_case::GenericGameCase, network_traits::BaseNetwork},
+};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
-use traits::network_traits::BaseNetwork;
-
-mod cases;
-mod networks;
-mod run;
-mod run_game;
-mod traits;
 
 #[derive(Parser, Debug)]
 // #[command(name = "nn")]
@@ -17,7 +16,7 @@ struct Cli {
     #[command(subcommand)]
     runner: Option<Runner>,
     #[clap(short, long)]
-    network: Option<usize>,
+    network: Option<Networks>,
 }
 
 #[derive(Debug, Subcommand)]
@@ -55,22 +54,22 @@ enum DataSet {
 
 fn main() {
     let cli = Cli::parse();
-    run_with(cli.runner);
+    run_with(cli.runner, &cli.network);
 }
 
-fn run_with(runner: Option<Runner>) {
+fn run_with(runner: Option<Runner>, network: &Option<Networks>) {
     match runner {
         Some(Runner::Game(g)) => match g.data {
             Some(GameSet::TikTakToes) => cases::game::tik_tak_toes::runner(),
             Some(GameSet::TikTakToesTest) => cases::game::tik_tak_toes::game_test(),
             Some(GameSet::PaperScissorsRock) => cases::game::paper_scissors_rock::runner(),
             None => GameSet::iter()
-                .for_each(|x| run_with(Some(Runner::Game(GameArgs { data: Some(x) })))),
+                .for_each(|x| run_with(Some(Runner::Game(GameArgs { data: Some(x) })),network)),
         },
         Some(Runner::PlayGame(g)) => match g.data {
             Some(GameSet::TikTakToes) => {
                 let game = TikTakToes;
-                let mut network = Network1::new_from_game(&game, 10,10,None);
+                let mut network = Network1::new(game.input_nodes(),game.output_nodes(), 10,10,None);
                 play_game(game, &mut network);
             }
             Some(GameSet::TikTakToesTest) => panic!("not implemented"),
@@ -81,13 +80,13 @@ fn run_with(runner: Option<Runner>) {
             Some(DataSet::Or) => cases::simple::or::runner(),
             Some(DataSet::And) => cases::simple::and::runner(),
             //lol andor orand
-            Some(DataSet::AndOr) => cases::simple::or_and::runner(),
+            Some(DataSet::AndOr) => cases::simple::or_and::runner(network),
             None => DataSet::iter()
-                .for_each(|x| run_with(Some(Runner::Data(DataArgs { data: Some(x) })))),
+                .for_each(|x| run_with(Some(Runner::Data(DataArgs { data: Some(x) })),network)),
         },
         None => {
-            run_with(Some(Runner::Game(GameArgs { data: None })));
-            run_with(Some(Runner::Data(DataArgs { data: None })));
+            run_with(Some(Runner::Game(GameArgs { data: None })),network);
+            run_with(Some(Runner::Data(DataArgs { data: None })),network);
         }
     }
 }

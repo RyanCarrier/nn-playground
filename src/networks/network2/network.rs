@@ -8,7 +8,10 @@ pub struct Network2 {
     pub layers: Vec<Layer>,
 }
 
-impl BaseNetwork<Network2> for Network2 {
+impl BaseNetwork for Network2 {
+    fn title(&self) -> String {
+        "Network2 (Vec<f64>)".to_string()
+    }
     fn new(
         input_nodes: usize,
         output_nodes: usize,
@@ -18,8 +21,8 @@ impl BaseNetwork<Network2> for Network2 {
     ) -> Network2 {
         let output_fn = match output_fn {
             Some(x) => x,
-            // None => |x| x.min(1.0).max(0.0),
-            None => |x: f64| x.max(0.0),
+            None => |x: f64| x.min(1.0).max(0.0),
+            // None => |x: f64| x.max(0.0),
             // None => |x| x,
         };
         Network2 {

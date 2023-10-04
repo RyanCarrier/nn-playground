@@ -1,3 +1,5 @@
+use rand::random;
+
 #[derive(Clone)]
 pub struct Layer {
     //can we make compile time sized array?
@@ -22,15 +24,13 @@ impl Layer {
         }
     }
     pub fn rand_weights(&mut self, rate: f64) {
+        let rand_rate = || (random::<f64>() - 0.5) * rate;
         self.old_weights = self.weights.clone();
-        self.weights.iter_mut().for_each(|x| {
-            x.iter_mut()
-                .for_each(|y| *y += rate * (rand::random::<f64>() - 0.5))
-        });
-        self.old_bias = self.bias.clone();
-        self.bias
+        self.weights
             .iter_mut()
-            .for_each(|x| *x += 0.1 * rate * (rand::random::<f64>() - 0.5))
+            .for_each(|x| x.iter_mut().for_each(|y| *y += rand_rate()));
+        self.old_bias = self.bias.clone();
+        self.bias.iter_mut().for_each(|x| *x += 0.1 * rand_rate());
     }
     pub fn run(&self, inputs: Vec<f64>) -> Vec<f64> {
         self.weights

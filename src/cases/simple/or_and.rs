@@ -1,38 +1,68 @@
-use crate::{run, traits::generic_test_case::GenericTestCase};
+use crate::{networks::Networks, run, traits::generic_test_case::GenericTestCase};
 
-pub fn runner() {
+pub fn runner(network: &Option<Networks>) {
     let test_cases = TestCaseOrAnd::get_all_generic();
-    run::run("OrAnd", &test_cases, 2..5, 2..7);
+    let layers = 2..5;
+    let nodes = 4..7;
+    match network {
+        Some(Networks::Network1) => {
+            run::run("OrAnd", Networks::Network1, &test_cases, layers, nodes)
+        }
+        Some(Networks::Network2) => {
+            run::run("OrAnd", Networks::Network2, &test_cases, layers, nodes)
+        }
+        None => {
+            run::run(
+                "OrAnd",
+                Networks::Network1,
+                &test_cases,
+                layers.clone(),
+                nodes.clone(),
+            );
+            run::run("OrAnd", Networks::Network2, &test_cases, layers, nodes);
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
 
-    use crate::{networks::network1::network, traits::network_traits::BaseNetwork};
+    use crate::{
+        networks::{network1::network::Network1, network2::network::Network2},
+        traits::network_traits::BaseNetwork,
+    };
 
     use super::TestCaseOrAnd;
-
-    fn default_network() -> network::Network1 {
-        network::Network1::new(3, 1, 4, 1, None)
+    fn get_network1() -> Network1 {
+        Network1::new(3, 1, 4, 1, None)
+    }
+    fn get_network2() -> Network2 {
+        Network2::new(3, 1, 4, 1, None)
     }
 
     #[test]
     fn learn() {
         let test_cases = TestCaseOrAnd::get_all_generic();
         for _ in 0..20 {
-            let mut network = default_network();
+            let mut network = get_network1();
             match network.learn(&test_cases, Some(100_000), None) {
-                Ok(_) => (),
+                Ok(err_history) => println!("err_history length: {}", err_history.len()),
+                Err(e) => panic!("{}", e),
+            }
+            test(network);
+            let mut network = get_network2();
+            match network.learn(&test_cases, Some(100_000), None) {
+                Ok(err_history) => println!("err_history length: {}", err_history.len()),
                 Err(e) => panic!("{}", e),
             }
             test(network);
         }
     }
 
-    fn test(mut network: network::Network1) {
+    fn test(mut network: impl BaseNetwork) {
         let error = network.test_all(&TestCaseOrAnd::get_all_generic());
         assert!(error.is_ok());
-        assert_eq!(error.unwrap(), 0.0);
+        assert_eq!(error.unwrap(), 0.0, "network: {}", network.title());
     }
 }
 #[derive(Clone, Copy)]

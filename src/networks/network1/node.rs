@@ -59,30 +59,22 @@ impl Node {
     }
     pub fn rand_weights(&mut self, rate: f64) {
         //-0.5 to 0.5
-        fn rand_rate(rate: f64) -> f64 {
-            (random::<f64>() - 0.5) * rate
-        }
+        let rand_rate = || (random::<f64>() - 0.5) * rate;
         self.old_paths = self.paths.clone();
         self.old_c = self.c.clone();
         self.paths.iter_mut().for_each(|x| {
-            if random::<f64>() < -0.5 {
-                //only update half of them
-                return;
-            }
-            let r = rand_rate(rate);
+            let r = rand_rate();
             // println!("r: {}, rate: {}", r, rate);
             *x += r;
             //removing these path limits seemed to work fine
             // *x = x.min(1.0).max(-1.0);
             // *x = x.min(1.0).max(0.0);
         });
-        if random::<f64>() > -0.5 {
-            //only update half of them
-            //this one is also fine without bounds
-            // self.c = (self.c + rand_rate(rate)).min(1.0).max(-1.0);
-            // self.c += 0.1 * rand_rate(rate);
-            self.c += 0.1 * rand_rate(rate);
-        }
+        //only update half of them
+        //this one is also fine without bounds
+        // self.c = (self.c + rand_rate(rate)).min(1.0).max(-1.0);
+        // self.c += 0.1 * rand_rate(rate);
+        self.c += 0.1 * rand_rate();
         // println!("old: {:?}, new:{:?}", self.old_paths, self.paths);
         // println!("oldc: {:?}, newc:{:?}", self.old_c, self.c);
     }

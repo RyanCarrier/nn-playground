@@ -2,14 +2,15 @@ use std::{fmt::Debug, usize::MAX};
 
 use super::{generic_game_case::*, generic_test_case::GenericTestCase};
 
-pub trait BaseNetwork<T: Clone>: Clone {
+pub trait BaseNetwork: Clone {
     fn new(
         input_nodes: usize,
         output_nodes: usize,
         internal_nodes: usize,
         internal_layers: usize,
         output_fn: Option<fn(f64) -> f64>,
-    ) -> T;
+    ) -> Self;
+    fn title(&self) -> String;
     fn internel_layers(&self) -> usize;
     fn internal_nodes(&self) -> usize;
     fn rand_weights(&mut self, rate: f64);
@@ -19,21 +20,6 @@ pub trait BaseNetwork<T: Clone>: Clone {
     // result is a ratio (higher is better)
     fn revert(&mut self);
     fn replace_self(&mut self, other: &mut Self);
-
-    fn new_from_game<Game: Copy>(
-        game: &impl GenericGameCase<Game>,
-        internal_nodes: usize,
-        internal_layers: usize,
-        output_fn: Option<fn(f64) -> f64>,
-    ) -> T {
-        Self::new(
-            game.input_nodes(),
-            game.output_nodes(),
-            internal_nodes,
-            internal_layers,
-            output_fn,
-        )
-    }
 
     fn test<I, O>(&mut self, test_case: &GenericTestCase<I, O>) -> Result<f64, String> {
         let result = self.run(test_case.get_input());
@@ -70,7 +56,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
         test_cases: &Vec<GenericTestCase<I, O>>,
     ) -> Result<Vec<f64>, String> {
         //we probably should have a timeout heh
-        self.learn(test_cases, None, Some(0.00000001))
+        self.learn(test_cases, None, None)
     }
     fn learn<I, O>(
         &mut self,
@@ -107,7 +93,7 @@ pub trait BaseNetwork<T: Clone>: Clone {
             } else {
                 self.revert();
             }
-            if i - last_rate_change > 50 {
+            if i - last_rate_change > 5 {
                 rate *= 1.05;
                 // println!("=====heating up, rate increasing to {:.3}", rate);
                 last_rate_change = i;

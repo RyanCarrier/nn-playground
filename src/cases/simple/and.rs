@@ -1,8 +1,9 @@
-use crate::{run, traits::generic_test_case::GenericTestCase};
+use crate::{networks::Networks, run, traits::generic_test_case::GenericTestCase};
 
 pub fn runner() {
     let test_cases = TestCaseAnd::get_all_generic();
-    run::run("And", &test_cases, 1..4, 2..6);
+    run::run("And", Networks::Network1, &test_cases, 1..4, 2..6);
+    run::run("And", Networks::Network2, &test_cases, 1..4, 2..6);
 }
 #[cfg(test)]
 mod tests {

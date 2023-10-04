@@ -9,7 +9,10 @@ pub struct Network1 {
     pub output_fn: fn(f64) -> f64,
 }
 
-impl BaseNetwork<Network1> for Network1 {
+impl BaseNetwork for Network1 {
+    fn title(&self) -> String {
+        "Network1".to_string()
+    }
     fn new(
         input_nodes: usize,
         output_nodes: usize,

@@ -1,31 +1,38 @@
 use std::ops::Range;
 
 use crate::{
-    networks::network1::network::Network1,
+    networks::{network1::network::Network1, network2::network::Network2, Networks},
     traits::{generic_test_case::GenericTestCase, network_traits::BaseNetwork},
 };
 
 pub fn run<I, O>(
     title: &str,
+    network: Networks,
     test_cases: &Vec<GenericTestCase<I, O>>,
     layers: Range<usize>,
     nodes: Range<usize>,
 ) {
     let inputs = test_cases[0].get_input().len();
     let outputs = test_cases[0].output_nodes;
-    println!("=== {} ===", title);
+    println!("=== {} === {} ===", title, network);
     for layer in layers {
         for node in nodes.clone() {
-            run_network(
-                Network1::new(inputs, outputs, node, layer, None),
-                &test_cases,
-            );
+            match network {
+                Networks::Network1 => run_network(
+                    Network1::new(inputs, outputs, node, layer, None),
+                    &test_cases,
+                ),
+                Networks::Network2 => run_network(
+                    Network2::new(inputs, outputs, node, layer, None),
+                    &test_cases,
+                ),
+            }
         }
         println!("------");
     }
 }
 
-pub fn run_network<I, O>(network: Network1, test_cases: &Vec<GenericTestCase<I, O>>) {
+pub fn run_network<I, O>(network: impl BaseNetwork, test_cases: &Vec<GenericTestCase<I, O>>) {
     print!(
         "internal layers:\t{},\tinternal nodes:\t{}",
         network.internel_layers(),
@@ -51,7 +58,7 @@ pub fn run_network<I, O>(network: Network1, test_cases: &Vec<GenericTestCase<I, 
     println!("\t\tOk! (avg iterations: {})", total_iterations / rounds);
 }
 pub fn verify<I, O>(
-    mut network: Network1,
+    mut network: impl BaseNetwork,
     test_cases: &Vec<GenericTestCase<I, O>>,
 ) -> Result<(), String> {
     let error = match network.test_all(test_cases) {
