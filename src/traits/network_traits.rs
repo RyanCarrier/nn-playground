@@ -1,6 +1,9 @@
 use std::{fmt::Debug, usize::MAX};
 
-use super::{generic_game_case::*, generic_test_case::GenericTestCase};
+use super::{
+    generic_game_case::*,
+    generic_test_case::{BatchResult, GenericTestCase, TestResult},
+};
 
 pub trait BaseNetwork: Clone {
     fn new(
@@ -22,22 +25,30 @@ pub trait BaseNetwork: Clone {
     fn revert(&mut self);
     fn replace_self(&mut self, other: &mut Self);
 
-    fn test<I, O>(&mut self, test_case: &GenericTestCase<I, O>) -> Result<f64, String> {
+    fn test<I, O>(&mut self, test_case: &GenericTestCase<I, O>) -> Result<TestResult, String> {
         let result = self.run(test_case.get_input());
-        let result_difference: f64 = test_case.result_error((test_case.output_transformer)(result));
-        Ok(result_difference)
+        let result_error: f64 = test_case.output_error(result, test_case.output);
+        Ok(TestResult {
+            result,
+            expected: test_case.output,
+            error: result_error,
+        })
     }
 
     //returns the average difference between the output and the expected output (0.0 is perfect, 1.0
     //is opposite)
-    fn test_all<I, O>(&mut self, test_cases: &Vec<GenericTestCase<I, O>>) -> Result<f64, String> {
+    fn test_all<I, O>(
+        &mut self,
+        test_cases: &Vec<GenericTestCase<I, O>>,
+    ) -> Result<BatchResult, String> {
         let cases_len = test_cases.len();
-        let results: Vec<f64> = match test_cases.into_iter().map(|x| self.test(x)).collect() {
+        let results: Vec<TestResult> = match test_cases.into_iter().map(|x| self.test(x)).collect()
+        {
             Ok(x) => x,
             Err(err) => return Err(format!("{}: {}", "test_all", err)),
         };
-        let result = results.into_iter().sum::<f64>() / cases_len as f64;
-        Ok(result)
+        let error = results.iter().map(|x| x.error).sum::<f64>() / cases_len as f64;
+        Ok(BatchResult { results, error })
     }
     fn print_all<I, O>(&mut self, test_cases: &Vec<GenericTestCase<I, O>>) -> Result<(), String> {
         let cases_len = test_cases.len();
@@ -81,7 +92,6 @@ pub trait BaseNetwork: Clone {
         let mut best_error = 1.0;
         let mut last_rate_change = 0;
         while i < max_iterations && error > min_error {
-            self.rand_weights(rate);
             error = match self.test_all(&test_cases) {
                 Ok(r) => r,
                 Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
@@ -103,6 +113,7 @@ pub trait BaseNetwork: Clone {
             rate = rate.min(4.0).max(0.0);
             // println!("{}: {}", i, error);
             i += 1;
+            // self.learn_from_results(,,rate);
         }
         Ok(learn_errors)
     }

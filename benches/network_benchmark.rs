@@ -1,9 +1,13 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use nn_playground::{
     cases::simple::or_and::TestCaseOrAnd,
-    networks::{network1::network::Network1, network2::network::Network2},
+    networks::{
+        network1::network::Network1, network2::network::Network2, network3::network::Network3,
+        Networks,
+    },
     traits::{generic_test_case::GenericTestCase, network_traits::BaseNetwork},
 };
+use strum::IntoEnumIterator;
 fn learn_cases(
     network: &mut impl BaseNetwork,
     test_cases: &Vec<GenericTestCase<Vec<f64>, f64>>,
@@ -11,6 +15,7 @@ fn learn_cases(
     network.learn(&test_cases, Some(10_000), None)
 }
 
+#[allow(dead_code)]
 fn ensure_correct(
     network: &mut impl BaseNetwork,
     test_cases: &Vec<GenericTestCase<Vec<f64>, f64>>,
@@ -45,16 +50,23 @@ fn or_and_internal(c: &mut Criterion, nodes_layers: usize) {
     //network1
 
     let mut group = c.benchmark_group(title);
+    for network in Networks::iter() {}
     group.bench_function(BenchmarkId::new("Network1", nodes_title.clone()), |b| {
         let network1 = Network1::new(3, 1, nodes_layers, nodes_layers, None);
         // ensure_correct(&mut network1.clone(), &test_cases);
         b.iter(|| learn_cases(black_box(&mut network1.clone()), black_box(&test_cases)))
     });
     //network2
-    group.bench_function(BenchmarkId::new("Network2", nodes_title), |b| {
+    group.bench_function(BenchmarkId::new("Network2", nodes_title.clone()), |b| {
         let network2 = Network2::new(3, 1, nodes_layers, nodes_layers, None);
         // ensure_correct(&mut network2.clone(), &test_cases);
         b.iter(|| learn_cases(black_box(&mut network2.clone()), black_box(&test_cases)))
+    });
+    //network3
+    group.bench_function(BenchmarkId::new("Network3", nodes_title), |b| {
+        let network3 = Network3::new(3, 1, nodes_layers, nodes_layers, None);
+        // ensure_correct(&mut network3.clone(), &test_cases);
+        b.iter(|| learn_cases(black_box(&mut network3.clone()), black_box(&test_cases)))
     });
 }
 

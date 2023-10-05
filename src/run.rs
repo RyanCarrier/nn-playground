@@ -1,7 +1,10 @@
 use std::ops::Range;
 
 use crate::{
-    networks::{network1::network::Network1, network2::network::Network2, Networks},
+    networks::{
+        network1::network::Network1, network2::network::Network2, network3::network::Network3,
+        Networks,
+    },
     traits::{generic_test_case::GenericTestCase, network_traits::BaseNetwork},
 };
 
@@ -24,6 +27,10 @@ pub fn run<I, O>(
                 ),
                 Networks::Network2 => run_network(
                     Network2::new(inputs, outputs, node, layer, None),
+                    &test_cases,
+                ),
+                Networks::Network3 => run_network(
+                    Network3::new(inputs, outputs, node, layer, None),
                     &test_cases,
                 ),
             }

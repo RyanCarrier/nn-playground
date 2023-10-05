@@ -37,7 +37,9 @@ impl BaseNetwork for Network2 {
             },
         }
     }
-    fn learn_from_results(&mut self, results: Vec<Vec<f64>>, expected: Vec<Vec<f64>>, rate: f64) {}
+    fn learn_from_results(&mut self, results: Vec<Vec<f64>>, expected: Vec<Vec<f64>>, rate: f64) {
+        self.rand_weights(rate)
+    }
     fn replace_self(&mut self, other: &mut Self) {
         self.layers = other.layers.clone();
     }

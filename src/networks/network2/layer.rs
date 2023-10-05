@@ -39,8 +39,7 @@ impl Layer {
                 paths
                     .iter()
                     .zip(inputs.iter())
-                    .map(|(x, y)| x * y)
-                    .sum::<f64>()
+                    .fold(0.0, |p, (x, y)| p + x * y)
             })
             .zip(self.bias.iter())
             .map(|(x, y)| (self.output_fn)(x + y))

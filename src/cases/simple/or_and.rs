@@ -11,6 +11,9 @@ pub fn runner(network: &Option<Networks>) {
         Some(Networks::Network2) => {
             run::run("OrAnd", Networks::Network2, &test_cases, layers, nodes)
         }
+        Some(Networks::Network3) => {
+            run::run("OrAnd", Networks::Network3, &test_cases, layers, nodes)
+        }
         None => {
             run::run(
                 "OrAnd",

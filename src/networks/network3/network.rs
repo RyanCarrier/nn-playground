@@ -4,13 +4,13 @@ use super::layer::Layer;
 
 //these really don't need to be structs but they probably will need to be later?
 #[derive(Clone)]
-pub struct Network2 {
+pub struct Network3 {
     pub layers: Vec<Layer>,
 }
 
-impl BaseNetwork for Network2 {
+impl BaseNetwork for Network3 {
     fn title(&self) -> String {
-        "Network2 (Vec<f64>)".to_string()
+        "Network3 (Vec<f64>)".to_string()
     }
     fn new(
         input_nodes: usize,
@@ -18,14 +18,14 @@ impl BaseNetwork for Network2 {
         internal_nodes: usize,
         internal_layers: usize,
         output_fn: Option<fn(f64) -> f64>,
-    ) -> Network2 {
+    ) -> Network3 {
         let output_fn = match output_fn {
             Some(x) => x,
             None => |x: f64| x.min(1.0).max(0.0),
             // None => |x: f64| x.max(0.0),
             // None => |x| x,
         };
-        Network2 {
+        Network3 {
             layers: {
                 let mut layers: Vec<Layer> = Vec::new();
                 layers.push(Layer::new(input_nodes, internal_nodes, output_fn));
