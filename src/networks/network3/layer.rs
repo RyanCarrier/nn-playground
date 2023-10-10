@@ -51,4 +51,17 @@ impl Layer {
         self.weights = self.old_weights.clone();
         self.bias = self.old_bias.clone();
     }
+
+    pub fn learn_from_results(&self, difference: Vec<f64>, rate: f64) -> Vec<f64> {
+        assert_eq!(difference.len(), self.weights.len());
+        let mut new_difference: Vec<f64> = vec![0.0; self.weights[0].len()];
+        for i in 0..self.weights.len() {
+            for j in 0..self.weights[i].len() {
+                new_difference[j] += difference[i] * self.weights[i][j];
+                self.weights[i][j] += difference[i] * rate;
+            }
+            self.bias[i] += difference[i] * rate;
+        }
+        new_difference
+    }
 }
