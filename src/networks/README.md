@@ -72,3 +72,7 @@ Ok pausing on the game side but watched some videos mainly from 3Blue1Brown up u
 (https://www.youtube.com/watch?v=Ilg3gGewQ5U)[link]
 
 going to just go ahead and make different networks now, first with just matricies and stuff, then with an attempt of back prop (and also changing c to bias lol)
+
+## pt 7
+
+Ok just goign through wikipedia foudn out what softmax function is which would be really good cause at the moment I don't really understand what bounds I should be aiminf for on the last layer (and whether or not to error out  for final values of over 1 softmax reduces everything to [0-1] realative to the values put in initially
