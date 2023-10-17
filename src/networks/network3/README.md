@@ -72,7 +72,7 @@ We want to know how much does the error change (and which way), based on changes
 
 $\frac{\partial{E}}{\partial{w^l_{ij}}}$, error change wrt a weight
 
-$\frac{\partial{E}}{\partial{b_{j}}}$, error wrt a bias
+$\frac{\partial{E}}{\partial{b^l_{j}}}$, error wrt a bias
 
 $E=\frac{1}{2}(t-y)^2$
 
@@ -120,22 +120,27 @@ So then all together;
 
 $
 \displaystyle
-\frac{\partial{E}}{\partial{w^l_{ij}}}=
+\frac{\partial{E}}{\partial{w^L_{ij}}}=
 \frac{\partial{E}}{\partial{y}}
-\frac{\partial{y}}{\partial{o^l_{ij}}}
-\frac{\partial{o^l_{ij}}}{\partial{w^l_{ij}}}
+\frac{\partial{y}}{\partial{o^L_{ij}}}
+\frac{\partial{o^L_{ij}}}{\partial{w^L_{ij}}}
 =\begin{cases}
 o^l_i \gt0 & (y-t){a_i^{l-1}}\\
 o^l_i \le0 & 0
 \end{cases}
 $
 
+Then for a weight not in the final layer...
+Note that $y\equiv a^L$
+
 $
 \displaystyle
 \frac{\partial{E}}{\partial{w^l_{ij}}}=
-\frac{\partial{E}}{\partial{y}}
-\frac{\partial{y}}{\partial{o^l_{ij}}}
-\frac{\partial{o^l_{ij}}}{\partial{w^l_{ij}}}
+\frac{\partial{E}}{\partial{a^L_{j}}}
+\frac{\partial a^L_{j}}{\partial{o^L_{ij}}}
+\frac{\partial{o^{L}_{ij}}}{\partial a^{L-1}_{j}}
+\frac{\partial a^{L-1}_{j}}{\partial{o^{L-1}_{ij}}}
+\frac{\partial{o^{L-1}_{ij}}}{\partial{w^{L-1}_{ij}}}
 $
 
 
