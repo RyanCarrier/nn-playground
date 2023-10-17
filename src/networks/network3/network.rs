@@ -38,15 +38,18 @@ impl BaseNetwork for Network3 {
         }
     }
     fn learn_from_results(&mut self, results: Vec<Vec<f64>>, expected: Vec<Vec<f64>>, rate: f64) {
-        let mut difference: Vec<f64> = vec![0.0; results.len()];
+        let mut difference: Vec<f64> = vec![0.0; results[0].len()];
         for i in 0..results.len() {
-            difference[i] = (expected[i]
-                .iter()
-                .zip(results[i].iter())
-                .map(|(x, y)| (x - y).powi(2))
-                .sum::<f64>()
-                / expected[i].len() as f64)
-                * rate;
+            for j in 0..results[i].len() {
+                let diff = results[i][j] - expected[i][j];
+                let sign = if (diff.is_sign_positive()) { 1.0 } else { -1.0 };
+                difference[j] += sign * diff.powi(2);
+            }
+        }
+        let rl = results.len() as f64;
+        difference.iter_mut().for_each(|x| *x /= rl);
+        for l in (self.layers.len() - 1)..=0 {
+            difference = self.layers[l].learn_from_results(difference, rate);
         }
     }
     fn replace_self(&mut self, other: &mut Self) {
