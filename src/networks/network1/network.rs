@@ -104,4 +104,10 @@ impl BaseNetwork for Network1 {
     fn revert(&mut self) {
         self.layers.iter_mut().for_each(|x| x.revert());
     }
+    fn back_prop_round<I, O>(
+        &mut self,
+        test_cases: &Vec<crate::traits::generic_test_case::GenericTestCase<I, O>>,
+    ) {
+        todo!()
+    }
 }

@@ -37,6 +37,17 @@ impl BaseNetwork for Network3 {
             },
         }
     }
+
+    fn back_prop_round<I, O>(
+        &mut self,
+        test_cases: &Vec<crate::traits::generic_test_case::GenericTestCase<I, O>>,
+    ) {
+        let mut de_dy = |x: f64, t: f64| x - t;
+        for case in test_cases {
+            let mut state = vec![];
+        }
+    }
+
     fn learn_from_results(&mut self, results: Vec<Vec<f64>>, expected: Vec<Vec<f64>>, rate: f64) {
         let mut difference: Vec<f64> = vec![0.0; results[0].len()];
         for i in 0..results.len() {

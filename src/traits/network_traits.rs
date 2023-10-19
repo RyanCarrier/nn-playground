@@ -19,6 +19,7 @@ pub trait BaseNetwork: Clone {
     fn rand_weights(&mut self, rate: f64);
     fn run(&mut self, initial_inputs: Vec<f64>) -> Vec<f64>;
     fn learn_from_results(&mut self, results: Vec<Vec<f64>>, expected: Vec<Vec<f64>>, rate: f64);
+    fn back_prop_round<I, O>(&mut self, test_cases: &Vec<GenericTestCase<I, O>>);
 
     //result is the value compared to previous success rate, 1.0 would be same as previous
     // result is a ratio (higher is better)
