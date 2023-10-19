@@ -137,55 +137,43 @@ $
 \displaystyle
 \frac{\partial{E}}{\partial{w^{L-1}_{ij}}}
 =\
-\frac{\partial{E}}{\partial{A^L}}
+\frac{\partial{E}}{\partial{A^{L-1}}}
+\frac{\partial{A^{L-1}}}{\partial{w^{L-1}_{ij}}}
+=\left(\
+\frac{\partial{E}}{\partial{A^{L}}}
 \frac{\partial{A^L}}{\partial{O^L}}
 \frac{\partial{O^L}}{\partial{A^{L-1}}}
-\frac{\partial{A^{L-1}}}{\partial{w^{L-1}_{ij}}}
+\right)
+\left(
+\frac{\partial{A^{L-1}}}{\partial{O^{L-1}}}
+\frac{\partial{O^{L-1}}}{\partial{w^{L-1}_{ij}}}
+\right)
 $
 
+
+For the next layer...
 
 $
 \displaystyle
 \frac{\partial{E}}{\partial{w^{L-2}_{ij}}}
 =\
-\frac{\partial{E}}{\partial{A^L}}
-\frac{\partial{A^L}}{\partial{O^L}}
-\frac{\partial{O^L}}{\partial{A^{L-1}}}
-\frac{\partial{A^{L-1}}}{\partial{O^{L-1}}}
-\frac{\partial{O^{L-1}}}{\partial{A^{L-2}}}
+\frac{\partial{E}}{\partial{A^{L-2}}}
 \frac{\partial{A^{L-2}}}{\partial{w^{L-2}_{ij}}}
-$
-
-We can see some repeated terms...
-
-$
-\displaystyle
-\frac{\partial{E}}{\partial{w^{L-1}_{ij}}}
 =\left(\
-\frac{\partial{E}}{\partial{A^L}}
-\frac{\partial{A^L}}{\partial{O^L}}
-\frac{\partial{O^L}}{\partial{A^{L-1}}}
-\right)
-\frac{\partial{A^{L-1}}}{\partial{w^{L-1}_{ij}}}
-$
-
-
-$
-\displaystyle
-\frac{\partial{E}}{\partial{w^{L-2}_{ij}}}
-=\left(\
-\left(\
-\frac{\partial{E}}{\partial{A^L}}
-\frac{\partial{A^L}}{\partial{O^L}}
-\frac{\partial{O^L}}{\partial{A^{L-1}}}
-\right)
+\frac{\partial{E}}{\partial{A^{L-1}}}
 \frac{\partial{A^{L-1}}}{\partial{O^{L-1}}}
 \frac{\partial{O^{L-1}}}{\partial{A^{L-2}}}
 \right)
-\frac{\partial{A^{L-2}}}{\partial{w^{L-2}_{ij}}}
+\left(
+\frac{\partial{A^{L-2}}}{\partial{O^{L-2}}}
+\frac{\partial{O^{L-2}}}{\partial{w^{L-2}_{ij}}}
+\right)
 $
 
-So...
+Note we can use some terms from the previous step...
+
+So more generically;
+
 
 $
 \displaystyle
@@ -193,41 +181,37 @@ $
 =\
 \frac{\partial{E}}{\partial{A^{l}}}
 \frac{\partial{A^{l}}}{\partial{w^{l}_{ij}}}
-$
-
-
-$
-\displaystyle
-\frac{\partial{E}}{\partial{A^{l}}}
-=\left(\
-\left(\
-\frac{\partial{E}}{\partial{A^L}}
-\frac{\partial{A^L}}{\partial{O^L}}
-\frac{\partial{O^L}}{\partial{A^{L-1}}}
-\right)
-\frac{\partial{A^{L-1}}}{\partial{O^{L-1}}}
-\frac{\partial{O^{L-1}}}{\partial{A^{L-2}}}
-\cdots
-\right)
-\frac{\partial{A^{l+1}}}{\partial{O^{l+1}}}
-\frac{\partial{O^{l+1}}}{\partial{A^{l}}}
-$
-
-$
-\displaystyle
-\frac{\partial{E}}{\partial{A^{l}}}
 =\left(\
 \frac{\partial{E}}{\partial{A^{l+1}}}
-\right)
 \frac{\partial{A^{l+1}}}{\partial{O^{l+1}}}
 \frac{\partial{O^{l+1}}}{\partial{A^{l}}}
+\right)
+\left(
+\frac{\partial{A^{l}}}{\partial{O^{l}}}
+\frac{\partial{O^{l}}}{\partial{w^{l}_{ij}}}
+\right)
 $
-
 
 $
 \displaystyle
-\frac{\partial{E}}{\partial{w^{l}_{ij}}}
-=\
-\frac{\partial{E}}{\partial{A^{l}}}
-\frac{\partial{A^{l}}}{\partial{w^{l}_{ij}}}
+\frac{\partial{E}}{\partial{A^{l+1}}}
 $
+will be provided by the next (previous in regards to back propogation) layer.
+
+$
+\displaystyle
+\frac{\partial{A^{l+1}}}{\partial{O^{l+1}}}
+=\begin{cases}
+o^{l+1}_i \gt0 & 1\\
+o^{l+1}_i \le0 & 0\
+\end{cases}\
+$
+
+$
+\displaystyle
+\frac{\partial{O^{l+1}}}{\partial{A^{l}}}
+=\
+\sum^{N^{l+1}}_{i=0} W^{l+1}_i
+$
+
+
