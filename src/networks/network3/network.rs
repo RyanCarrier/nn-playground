@@ -44,7 +44,7 @@ impl BaseNetwork for Network3 {
     ) {
         let mut de_dy = |x: f64, t: f64| x - t;
         for case in test_cases {
-            let mut state = vec![];
+            // let mut state = vec![];
         }
     }
 
@@ -53,7 +53,7 @@ impl BaseNetwork for Network3 {
         for i in 0..results.len() {
             for j in 0..results[i].len() {
                 let diff = results[i][j] - expected[i][j];
-                let sign = if (diff.is_sign_positive()) { 1.0 } else { -1.0 };
+                let sign = if diff.is_sign_positive() { 1.0 } else { -1.0 };
                 difference[j] += sign * diff.powi(2);
             }
         }

@@ -11,7 +11,7 @@ pub trait BaseNetwork: Clone {
         output_nodes: usize,
         internal_nodes: usize,
         internal_layers: usize,
-        output_fn: Option<fn(f64) -> f64>,
+        activation_fn: Option<fn(f64) -> f64>,
     ) -> Self;
     fn title(&self) -> String;
     fn internel_layers(&self) -> usize;
@@ -26,14 +26,37 @@ pub trait BaseNetwork: Clone {
     fn revert(&mut self);
     fn replace_self(&mut self, other: &mut Self);
 
-    fn test<I, O>(&mut self, test_case: &GenericTestCase<I, O>) -> Result<TestResult, String> {
+    fn test<I, O>(
+        &mut self,
+        test_case: &GenericTestCase<I, O>,
+        error_fn: Option<fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>>,
+    ) -> Result<TestResult, String> {
         let result = self.run(test_case.get_input());
-        let result_error: f64 = test_case.output_error(result, test_case.output);
+        let result_error: f64 = Self::or_mse(error_fn, &result, &test_case.output)
+            .into_iter()
+            .sum();
         Ok(TestResult {
             result,
             expected: test_case.output,
             error: result_error,
         })
+    }
+    fn or_mse(
+        error_fn: Option<fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>>,
+        output: &Vec<f64>,
+        expected_output: &Vec<f64>,
+    ) -> Vec<f64> {
+        match error_fn {
+            Some(x) => x(output, expected_output),
+            None => Self::mse(output, expected_output),
+        }
+    }
+    fn mse(output: &Vec<f64>, expected_output: &Vec<f64>) -> Vec<f64> {
+        output
+            .iter()
+            .zip(expected_output.iter())
+            .map(|(x, y)| (x - y).powi(2))
+            .collect()
     }
 
     //returns the average difference between the output and the expected output (0.0 is perfect, 1.0
@@ -41,9 +64,17 @@ pub trait BaseNetwork: Clone {
     fn test_all<I, O>(
         &mut self,
         test_cases: &Vec<GenericTestCase<I, O>>,
+        error_fn: Option<fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>>,
     ) -> Result<BatchResult, String> {
+        let error_fn = match error_fn {
+            Some(x) => x,
+            None => BaseNetwork::mse,
+        };
         let cases_len = test_cases.len();
-        let results: Vec<TestResult> = match test_cases.into_iter().map(|x| self.test(x)).collect()
+        let results: Vec<TestResult> = match test_cases
+            .into_iter()
+            .map(|x| self.test(x, error_fn))
+            .collect()
         {
             Ok(x) => x,
             Err(err) => return Err(format!("{}: {}", "test_all", err)),
@@ -51,7 +82,11 @@ pub trait BaseNetwork: Clone {
         let error = results.iter().map(|x| x.error).sum::<f64>() / cases_len as f64;
         Ok(BatchResult { results, error })
     }
-    fn print_all<I, O>(&mut self, test_cases: &Vec<GenericTestCase<I, O>>) -> Result<(), String> {
+    fn print_all<I, O>(
+        &mut self,
+        test_cases: &Vec<GenericTestCase<I, O>>,
+        error_fn: fn(Vec<f64>, Vec<f64>) -> Vec<f64>,
+    ) -> Result<(), String> {
         let cases_len = test_cases.len();
         for i in 0..cases_len {
             let result = self.run(test_cases[i].get_input());
@@ -59,7 +94,9 @@ pub trait BaseNetwork: Clone {
             println!(
                 "test_result: [{}], diff: [{}]",
                 result[0].clone(),
-                test_cases[i].result_error((test_cases[i].output_transformer)(result))
+                error_fn(test_cases[i].output, test_cases[i].output)
+                    .into_iter()
+                    .sum::<f64>()
             );
         }
         Ok(())
@@ -78,7 +115,7 @@ pub trait BaseNetwork: Clone {
         min_error: Option<f64>,
     ) -> Result<Vec<f64>, String> {
         let mut learn_errors = Vec::new();
-        let mut error = self.test_all(&test_cases)?;
+        let mut test_all_result = self.test_all(&test_cases)?;
         let mut rate: f64 = 0.2;
         let max_iterations = match max_iterations {
             Some(x) => x,
@@ -92,13 +129,13 @@ pub trait BaseNetwork: Clone {
         let mut i = 0;
         let mut best_error = 1.0;
         let mut last_rate_change = 0;
-        while i < max_iterations && error > min_error {
-            error = match self.test_all(&test_cases) {
+        while i < max_iterations && test_all_result.error > min_error {
+            test_all_result = match self.test_all(&test_cases) {
                 Ok(r) => r,
                 Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
             };
-            if error < best_error {
-                best_error = error;
+            if test_all_result.error < best_error {
+                best_error = test_all_result.error;
                 rate *= 0.99;
                 last_rate_change = i;
                 // println!("=====learn, rate lowering to {:.3}", rate);
@@ -110,7 +147,7 @@ pub trait BaseNetwork: Clone {
                 // println!("=====heating up, rate increasing to {:.3}", rate);
                 last_rate_change = i;
             }
-            learn_errors.push(error);
+            learn_errors.push(test_all_result.error);
             rate = rate.min(4.0).max(0.0);
             // println!("{}: {}", i, error);
             i += 1;

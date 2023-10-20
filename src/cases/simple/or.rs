@@ -30,7 +30,7 @@ mod tests {
             output_fn: |x| if x > 0.5 { 1.0 } else { 0.0 },
         };
         let error = network.test_all(&test_cases).unwrap();
-        assert_eq!(error, 0.0);
+        assert_eq!(error.error, 0.0);
     }
 
     fn default_network() -> network::Network1 {
@@ -53,7 +53,7 @@ mod tests {
     fn test(mut network: network::Network1) {
         let error = network.test_all(&TestCaseOr::get_all_generic());
         assert!(error.is_ok());
-        assert_eq!(error.unwrap(), 0.0);
+        assert_eq!(error.unwrap().error, 0.0);
     }
 }
 pub struct TestCaseOr {
@@ -64,12 +64,11 @@ impl TestCaseOr {
     pub fn to_generic(&self) -> GenericTestCase<Vec<f64>, f64> {
         GenericTestCase {
             input: self.input.to_vec(),
-            output: self.output,
+            output: [self.output].to_vec(),
             output_nodes: 1,
             display: self.display(),
             input_transformer: |x| x.to_vec(),
             output_transformer: |x| *x.first().unwrap(),
-            output_error: |x, y| (x - y).abs(),
         }
     }
     pub fn display(&self) -> String {

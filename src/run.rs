@@ -68,12 +68,12 @@ pub fn verify<I, O>(
     mut network: impl BaseNetwork,
     test_cases: &Vec<GenericTestCase<I, O>>,
 ) -> Result<(), String> {
-    let error = match network.test_all(test_cases) {
+    let result = match network.test_all(test_cases) {
         Ok(r) => r,
         Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
     };
-    if error != 0.0 {
-        return Err(format!("error: {}", error));
+    if result.error != 0.0 {
+        return Err(format!("error: {}", result.error));
     }
     Ok(())
 }

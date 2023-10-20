@@ -31,9 +31,9 @@ mod tests {
 
     fn test(mut network: network::Network1) {
         let test_cases = TestCaseAnd::get_all_generic();
-        let error = network.test_all(&test_cases);
+        let error = network.test_all(&test_cases, TestCaseAnd::error_fn);
         assert!(error.is_ok());
-        assert_eq!(error.unwrap(), 0.0);
+        assert_eq!(error.unwrap().error, 0.0);
     }
 }
 pub struct TestCaseAnd {
@@ -41,15 +41,21 @@ pub struct TestCaseAnd {
     output: f64,
 }
 impl TestCaseAnd {
+    pub fn error_fn(output: Vec<f64>, expected_output: Vec<f64>) -> Vec<f64> {
+        output
+            .iter()
+            .zip(expected_output.iter())
+            .map(|(x, y)| (x - y).powi(2))
+            .collect()
+    }
     pub fn to_generic(&self) -> GenericTestCase<Vec<f64>, f64> {
         GenericTestCase {
             input: self.input.to_vec(),
-            output: self.output,
+            output: [self.output].to_vec(),
             output_nodes: 1,
             display: self.display(),
             input_transformer: |x| x.to_vec(),
             output_transformer: |x| *x.first().unwrap(),
-            output_error: |x, y| (x - y).abs(),
         }
     }
     pub fn display(&self) -> String {

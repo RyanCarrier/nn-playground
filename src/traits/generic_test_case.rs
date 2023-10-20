@@ -14,14 +14,14 @@ impl<I, O> GenericTestCase<I, O> {
     pub fn get_input(&self) -> Vec<f64> {
         (self.input_transformer)(&self.input)
     }
-    pub fn output_error(&self, result: Vec<f64>, expected: Vec<f64>) -> f64 {
-        result
-            .iter()
-            .zip(expected.iter())
-            .map(|x| (x.0 - x.1).powi(2))
-            .sum::<f64>()
-            / expected.len() as f64
-    }
+    // pub fn output_error(&self, result: Vec<f64>, expected: Vec<f64>) -> f64 {
+    //     result
+    //         .iter()
+    //         .zip(expected.iter())
+    //         .map(|x| (x.0 - x.1).powi(2))
+    //         .sum::<f64>()
+    //         / expected.len() as f64
+    // }
 }
 
 pub struct BatchResult {

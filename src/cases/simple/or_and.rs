@@ -65,7 +65,7 @@ mod tests {
     fn test(mut network: impl BaseNetwork) {
         let error = network.test_all(&TestCaseOrAnd::get_all_generic());
         assert!(error.is_ok());
-        assert_eq!(error.unwrap(), 0.0, "network: {}", network.title());
+        assert_eq!(error.unwrap().error, 0.0, "network: {}", network.title());
     }
 }
 #[derive(Clone, Copy)]
@@ -77,12 +77,11 @@ impl TestCaseOrAnd {
     pub fn to_generic(&self) -> GenericTestCase<Vec<f64>, f64> {
         GenericTestCase {
             input: self.input.to_vec(),
-            output: self.output,
+            output: [self.output].to_vec(),
             output_nodes: 1,
             display: self.display(),
             input_transformer: |x| x.to_vec(),
             output_transformer: |x| *x.first().unwrap(),
-            output_error: |x, y| (x - y).abs(),
         }
     }
     pub fn display(&self) -> String {
