@@ -49,7 +49,7 @@ pub fn run_network<I, O>(network: impl BaseNetwork, test_cases: &Vec<GenericTest
     let mut total_iterations = 0;
     for _ in 0..rounds {
         let mut network = network.clone();
-        let learn_errors: Vec<f64> = match network.learn(&test_cases, Some(100_000), None) {
+        let learn_errors: Vec<f64> = match network.learn(&test_cases, Some(100_000), None, None) {
             Ok(l) => l,
             Err(e) => panic!("{}", e),
         };
@@ -68,7 +68,7 @@ pub fn verify<I, O>(
     mut network: impl BaseNetwork,
     test_cases: &Vec<GenericTestCase<I, O>>,
 ) -> Result<(), String> {
-    let result = match network.test_all(test_cases) {
+    let result = match network.test_all(test_cases, None) {
         Ok(r) => r,
         Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
     };

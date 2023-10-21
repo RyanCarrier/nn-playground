@@ -21,7 +21,7 @@ mod tests {
         let test_cases = TestCaseAnd::get_all_generic();
         for _ in 0..20 {
             let mut network = default_network();
-            match network.learn(&test_cases, Some(100_000), None) {
+            match network.learn(&test_cases, Some(100_000), None, None) {
                 Ok(_) => (),
                 Err(e) => panic!("{}", e),
             }
@@ -31,7 +31,7 @@ mod tests {
 
     fn test(mut network: network::Network1) {
         let test_cases = TestCaseAnd::get_all_generic();
-        let error = network.test_all(&test_cases, TestCaseAnd::error_fn);
+        let error = network.test_all(&test_cases, Some(TestCaseAnd::error_fn));
         assert!(error.is_ok());
         assert_eq!(error.unwrap().error, 0.0);
     }
@@ -41,7 +41,7 @@ pub struct TestCaseAnd {
     output: f64,
 }
 impl TestCaseAnd {
-    pub fn error_fn(output: Vec<f64>, expected_output: Vec<f64>) -> Vec<f64> {
+    pub fn error_fn(output: &Vec<f64>, expected_output: &Vec<f64>) -> Vec<f64> {
         output
             .iter()
             .zip(expected_output.iter())

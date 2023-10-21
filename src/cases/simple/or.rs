@@ -29,7 +29,9 @@ mod tests {
             ],
             output_fn: |x| if x > 0.5 { 1.0 } else { 0.0 },
         };
-        let error = network.test_all(&test_cases).unwrap();
+        let error = network
+            .test_all(&test_cases, Some(TestCaseOr::error_fn))
+            .unwrap();
         assert_eq!(error.error, 0.0);
     }
 
@@ -42,7 +44,7 @@ mod tests {
         let test_cases = TestCaseOr::get_all_generic();
         for _ in 0..20 {
             let mut network = default_network();
-            match network.learn(&test_cases, Some(100_000), None) {
+            match network.learn(&test_cases, Some(100_000), None, None) {
                 Ok(_) => (),
                 Err(e) => panic!("{}", e),
             }
@@ -51,7 +53,7 @@ mod tests {
     }
 
     fn test(mut network: network::Network1) {
-        let error = network.test_all(&TestCaseOr::get_all_generic());
+        let error = network.test_all(&TestCaseOr::get_all_generic(), Some(TestCaseOr::error_fn));
         assert!(error.is_ok());
         assert_eq!(error.unwrap().error, 0.0);
     }
@@ -70,6 +72,13 @@ impl TestCaseOr {
             input_transformer: |x| x.to_vec(),
             output_transformer: |x| *x.first().unwrap(),
         }
+    }
+    pub fn error_fn(output: &Vec<f64>, expected_output: &Vec<f64>) -> Vec<f64> {
+        output
+            .iter()
+            .zip(expected_output.iter())
+            .map(|(x, y)| (x - y).powi(2))
+            .collect()
     }
     pub fn display(&self) -> String {
         let mut s = String::from("input: ");

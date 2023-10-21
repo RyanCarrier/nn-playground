@@ -3,16 +3,14 @@ use nn_playground::{
     cases::simple::or_and::TestCaseOrAnd,
     networks::{
         network1::network::Network1, network2::network::Network2, network3::network::Network3,
-        Networks,
     },
     traits::{generic_test_case::GenericTestCase, network_traits::BaseNetwork},
 };
-use strum::IntoEnumIterator;
 fn learn_cases(
     network: &mut impl BaseNetwork,
     test_cases: &Vec<GenericTestCase<Vec<f64>, f64>>,
 ) -> Result<Vec<f64>, String> {
-    network.learn(&test_cases, Some(10_000), None)
+    network.learn(&test_cases, Some(10_000), None, None)
 }
 
 #[allow(dead_code)]
@@ -50,7 +48,7 @@ fn or_and_internal(c: &mut Criterion, nodes_layers: usize) {
     //network1
 
     let mut group = c.benchmark_group(title);
-    for network in Networks::iter() {}
+    // for network in Networks::iter() {}
     group.bench_function(BenchmarkId::new("Network1", nodes_title.clone()), |b| {
         let network1 = Network1::new(3, 1, nodes_layers, nodes_layers, None);
         // ensure_correct(&mut network1.clone(), &test_cases);

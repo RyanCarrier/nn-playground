@@ -38,8 +38,6 @@ impl BaseNetwork for Network1 {
             },
         }
     }
-    #[allow(unused_variables)]
-    fn learn_from_results(&mut self, results: Vec<Vec<f64>>, expected: Vec<Vec<f64>>, rate: f64) {}
     fn replace_self(&mut self, other: &mut Self) {
         self.layers = other.layers.clone();
     }
@@ -104,9 +102,11 @@ impl BaseNetwork for Network1 {
     fn revert(&mut self) {
         self.layers.iter_mut().for_each(|x| x.revert());
     }
-    fn back_prop_round<I, O>(
+    #[allow(unused_variables)]
+    fn learn_from_testcases<I, O>(
         &mut self,
         test_cases: &Vec<crate::traits::generic_test_case::GenericTestCase<I, O>>,
+        rate: f64,
     ) {
         todo!()
     }

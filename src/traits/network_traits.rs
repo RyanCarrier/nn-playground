@@ -18,8 +18,7 @@ pub trait BaseNetwork: Clone {
     fn internal_nodes(&self) -> usize;
     fn rand_weights(&mut self, rate: f64);
     fn run(&mut self, initial_inputs: Vec<f64>) -> Vec<f64>;
-    fn learn_from_results(&mut self, results: Vec<Vec<f64>>, expected: Vec<Vec<f64>>, rate: f64);
-    fn back_prop_round<I, O>(&mut self, test_cases: &Vec<GenericTestCase<I, O>>);
+    fn learn_from_testcases<I, O>(&mut self, test_cases: &Vec<GenericTestCase<I, O>>, rate: f64);
 
     //result is the value compared to previous success rate, 1.0 would be same as previous
     // result is a ratio (higher is better)
@@ -37,7 +36,7 @@ pub trait BaseNetwork: Clone {
             .sum();
         Ok(TestResult {
             result,
-            expected: test_case.output,
+            expected: test_case.output.clone(),
             error: result_error,
         })
     }
@@ -68,12 +67,12 @@ pub trait BaseNetwork: Clone {
     ) -> Result<BatchResult, String> {
         let error_fn = match error_fn {
             Some(x) => x,
-            None => BaseNetwork::mse,
+            None => Self::mse,
         };
         let cases_len = test_cases.len();
         let results: Vec<TestResult> = match test_cases
             .into_iter()
-            .map(|x| self.test(x, error_fn))
+            .map(|x| self.test(x, Some(error_fn)))
             .collect()
         {
             Ok(x) => x,
@@ -85,7 +84,7 @@ pub trait BaseNetwork: Clone {
     fn print_all<I, O>(
         &mut self,
         test_cases: &Vec<GenericTestCase<I, O>>,
-        error_fn: fn(Vec<f64>, Vec<f64>) -> Vec<f64>,
+        error_fn: fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>,
     ) -> Result<(), String> {
         let cases_len = test_cases.len();
         for i in 0..cases_len {
@@ -94,7 +93,7 @@ pub trait BaseNetwork: Clone {
             println!(
                 "test_result: [{}], diff: [{}]",
                 result[0].clone(),
-                error_fn(test_cases[i].output, test_cases[i].output)
+                error_fn(&test_cases[i].output, &test_cases[i].output)
                     .into_iter()
                     .sum::<f64>()
             );
@@ -104,18 +103,20 @@ pub trait BaseNetwork: Clone {
     fn auto_learn<I, O>(
         &mut self,
         test_cases: &Vec<GenericTestCase<I, O>>,
+        error_fn: Option<fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>>,
     ) -> Result<Vec<f64>, String> {
         //we probably should have a timeout heh
-        self.learn(test_cases, None, None)
+        self.learn(test_cases, None, None, error_fn)
     }
     fn learn<I, O>(
         &mut self,
         test_cases: &Vec<GenericTestCase<I, O>>,
         max_iterations: Option<usize>,
         min_error: Option<f64>,
+        error_fn: Option<fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>>,
     ) -> Result<Vec<f64>, String> {
         let mut learn_errors = Vec::new();
-        let mut test_all_result = self.test_all(&test_cases)?;
+        let mut test_all_result = self.test_all(&test_cases, None)?;
         let mut rate: f64 = 0.2;
         let max_iterations = match max_iterations {
             Some(x) => x,
@@ -130,7 +131,7 @@ pub trait BaseNetwork: Clone {
         let mut best_error = 1.0;
         let mut last_rate_change = 0;
         while i < max_iterations && test_all_result.error > min_error {
-            test_all_result = match self.test_all(&test_cases) {
+            test_all_result = match self.test_all(&test_cases, error_fn) {
                 Ok(r) => r,
                 Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
             };

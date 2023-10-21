@@ -48,13 +48,13 @@ mod tests {
         let test_cases = TestCaseOrAnd::get_all_generic();
         for _ in 0..20 {
             let mut network = get_network1();
-            match network.learn(&test_cases, Some(100_000), None) {
+            match network.learn(&test_cases, Some(100_000), None, None) {
                 Ok(err_history) => println!("err_history length: {}", err_history.len()),
                 Err(e) => panic!("{}", e),
             }
             test(network);
             let mut network = get_network2();
-            match network.learn(&test_cases, Some(100_000), None) {
+            match network.learn(&test_cases, Some(100_000), None, None) {
                 Ok(err_history) => println!("err_history length: {}", err_history.len()),
                 Err(e) => panic!("{}", e),
             }
@@ -63,7 +63,7 @@ mod tests {
     }
 
     fn test(mut network: impl BaseNetwork) {
-        let error = network.test_all(&TestCaseOrAnd::get_all_generic());
+        let error = network.test_all(&TestCaseOrAnd::get_all_generic(), None);
         assert!(error.is_ok());
         assert_eq!(error.unwrap().error, 0.0, "network: {}", network.title());
     }
