@@ -54,7 +54,7 @@ pub trait BaseNetwork: Clone {
         output
             .iter()
             .zip(expected_output.iter())
-            .map(|(x, y)| (x - y).powi(2))
+            .map(|(x, y)| (x - y).powi(2) / 2.0)
             .collect()
     }
 
