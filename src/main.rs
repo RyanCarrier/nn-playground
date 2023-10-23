@@ -77,8 +77,8 @@ fn run_with(runner: Option<Runner>, network: &Option<Networks>) {
             None => panic!("we need to specify which game to play... this should also be done in clap not panic"),        
         },
         Some(Runner::Data(d)) => match d.data {
-            Some(DataSet::Or) => cases::simple::or::runner(),
-            Some(DataSet::And) => cases::simple::and::runner(),
+            Some(DataSet::Or) => cases::simple::or::runner(network),
+            Some(DataSet::And) => cases::simple::and::runner(network),
             //lol andor orand
             Some(DataSet::AndOr) => cases::simple::or_and::runner(network),
             None => DataSet::iter()

@@ -1,9 +1,21 @@
+use strum::IntoEnumIterator;
+
 use crate::{networks::Networks, run, traits::generic_test_case::GenericTestCase};
 
-pub fn runner() {
+pub fn runner(network: &Option<Networks>) {
     let test_cases = TestCaseAnd::get_all_generic();
-    run::run("And", Networks::Network1, &test_cases, 1..4, 2..6);
-    run::run("And", Networks::Network2, &test_cases, 1..4, 2..6);
+    let layers = 1..4;
+    let nodes = 2..6;
+    match network {
+        Some(Networks::Network1) => run::run("And", Networks::Network1, &test_cases, layers, nodes),
+        Some(Networks::Network2) => run::run("And", Networks::Network2, &test_cases, layers, nodes),
+        Some(Networks::Network3) => run::run("And", Networks::Network3, &test_cases, layers, nodes),
+        None => {
+            Networks::iter().for_each(|network| {
+                runner(&Some(network));
+            });
+        }
+    }
 }
 #[cfg(test)]
 mod tests {

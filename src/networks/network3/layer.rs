@@ -15,10 +15,18 @@ pub struct Layer {
 }
 impl Layer {
     pub fn new(input_size: usize, output_size: usize, output_fn: fn(f64) -> f64) -> Layer {
+        let rand_rate = || (random::<f64>());
+        let weights = (0..output_size)
+            .map(|_| (0..input_size).map(|_| rand_rate()).collect())
+            .collect();
+        let bias = (0..output_size).map(|_| rand_rate()).collect();
+
         Layer {
-            weights: vec![vec![0.0; input_size]; output_size],
+            // weights: vec![vec![0.1; input_size]; output_size],
+            weights,
             old_weights: vec![vec![0.0; input_size]; output_size],
-            bias: vec![0.0; output_size],
+            // bias: vec![0.1; output_size],
+            bias,
             old_bias: vec![0.0; output_size],
             output_fn,
         }

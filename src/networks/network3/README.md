@@ -238,11 +238,16 @@ $
 \frac{\partial{A^{l}}}{\partial{w^{l}_{ij}}}
 =\left(\
 \frac{\partial{E}}{\partial{A^{l+1}}}
-max(O^{l+1},0)A^l\
+\begin{cases}
+o^{l}_i \gt0 & \sum^{N^{l+1}}_{i=0} W^{l+1}_i\\
+o^{l}_i \le0 & 0\
+\end{cases}\
 \right)
 \left(
-\frac{\partial{A^{l}}}{\partial{O^{l}}}
-\frac{\partial{O^{l}}}{\partial{w^{l}_{ij}}}
+\begin{cases}
+o^{l}_i \gt0 & a^{l-1}_i\\
+o^{l}_i \le0 & 0\
+\end{cases}\
 \right)
 $
 
@@ -260,5 +265,14 @@ o^{l}_i \gt0 & 1\\
 o^{l}_i \le0 & 0\
 \end{cases}\
 $, as differentiating over the bias will always be 1
+
+$
+\displaystyle
+\frac{\partial{E^{l}}}{\partial{B^{l}}}
+=\
+\frac{\partial{E}}{\partial{A^{l}}}
+\frac{\partial{A^{l}}}{\partial{B^{l}}}
+$
+
 
 

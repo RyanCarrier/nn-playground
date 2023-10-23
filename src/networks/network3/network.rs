@@ -1,4 +1,4 @@
-use crate::traits::network_traits::BaseNetwork;
+use crate::traits::{generic_test_case::BatchResult, network_traits::BaseNetwork};
 
 use super::layer::Layer;
 
@@ -21,7 +21,7 @@ impl BaseNetwork for Network3 {
     ) -> Network3 {
         let output_fn = match activation {
             Some(x) => x,
-            None => |x: f64| x.min(1.0).max(0.0),
+            None => |x: f64| x.max(0.0),
             // None => |x: f64| x.max(0.0),
             // None => |x| x,
         };
@@ -67,7 +67,9 @@ impl BaseNetwork for Network3 {
         &mut self,
         test_cases: &Vec<crate::traits::generic_test_case::GenericTestCase<I, O>>,
         rate: f64,
-    ) {
+        error_fn: Option<fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>>,
+    ) -> Result<BatchResult, String> {
+        //cmon guys back propogation is simple 8), just copy it from chatgpt or smth
         let de_dy = |y: &Vec<f64>, t: &Vec<f64>| {
             y.iter()
                 .zip(t.iter())
@@ -80,7 +82,7 @@ impl BaseNetwork for Network3 {
         let mut total_weight_gradients: Vec<Vec<Vec<f64>>> = self
             .layers
             .iter()
-            .map(|x| vec![vec![0.0; x.weights.len()]; x.bias.len()])
+            .map(|x| x.weights.iter().map(|w| vec![0.0; w.len()]).collect())
             .collect();
         let mut total_bias_gradients: Vec<Vec<f64>> = self
             .layers
@@ -95,15 +97,21 @@ impl BaseNetwork for Network3 {
                 layer_results.iter().map(|x| vec![0.0; x.len()]).collect();
             //output layer grads (dE/dA^L)
             layer_result_gradients[layers - 1] = de_dy(&layer_results[layers - 1], &case.output);
+            // println!("layer results: {:?}", layer_results);
+            // println!("last layer grads: {:?}", layer_result_gradients);
             //figure out A^l gradients (dE/dA^l)
             for layer_index in (0..(layers - 1)).rev() {
                 let layer_len = layer_result_gradients[layer_index].len();
                 let deeper_layer_grad = layer_result_gradients[layer_index + 1].clone();
                 for j in 0..layer_len {
                     let mut temp_grad = 0.0;
+                    //next sum up all the contribute to this partial
                     for k in 0..deeper_layer_grad.len() {
                         //this is the dA[l+1]/dO[l+1]
+                        // add all layer weights that pass activation?
                         if layer_results[layer_index + 1][k] > 0.0 {
+                            //i think this might be incorrect, like we shoudl be adding all weights
+                            //regardless, but only including per node section that is active
                             //DE/DA[l+1]
                             //dO[l+1]/dw[l]
                             temp_grad +=
@@ -113,6 +121,7 @@ impl BaseNetwork for Network3 {
                     layer_result_gradients[layer_index][j] = temp_grad;
                 }
             }
+            // println!("last layer grads(post): {:?}", layer_result_gradients);
 
             //update the total weight gradients, these are not reliant on each other, so all
             // we need is the Error wrt activations
@@ -129,17 +138,39 @@ impl BaseNetwork for Network3 {
                     &layer_results[l - 1]
                 };
                 for j in 0..layer_results[l].len() {
-                    total_bias_gradients[l][j] = layer_result_gradients[l][j];
+                    if layer_results[l][j] > 0.0 {
+                        total_bias_gradients[l][j] += layer_result_gradients[l][j];
+                    }
                     for i in 0..prev_layer_activations.len() {
-                        if prev_layer_activations[i] <= 0.0 {
-                            continue;
+                        if prev_layer_activations[i] > 0.0 {
+                            total_weight_gradients[l][j][i] +=
+                                layer_result_gradients[l][j] * prev_layer_activations[i];
                         }
-                        total_weight_gradients[l][j][i] =
-                            self.layers[l].weights[j][i] * layer_result_gradients[l][j];
                     }
                 }
             }
         }
+        // println!("total total_bias_gradients {:?}", total_bias_gradients);
+        let test_cases_len = test_cases.len() as f64;
+        // self.layers
+        //     .iter()
+        //     .for_each(|x| println!("Pre  Weights: {:?}", x.weights));
+        let my_rate = 0.1;
+        for l in 0..layers {
+            for j in 0..total_bias_gradients[l].len() {
+                self.layers[l].bias[j] -= my_rate * (total_bias_gradients[l][j] / test_cases_len);
+            }
+            for j in 0..total_weight_gradients[l].len() {
+                for i in 0..total_weight_gradients[l][j].len() {
+                    self.layers[l].weights[j][i] -=
+                        my_rate * (total_weight_gradients[l][j][i] / test_cases_len);
+                }
+            }
+        }
+        // self.layers
+        //     .iter()
+        //     .for_each(|x| println!("Post Weights: {:?}", x.weights));
+        self.test_all(test_cases, error_fn)
     }
 }
 impl Network3 {

@@ -1,3 +1,5 @@
+use strum::IntoEnumIterator;
+
 use crate::{networks::Networks, run, traits::generic_test_case::GenericTestCase};
 
 pub fn runner(network: &Option<Networks>) {
@@ -15,14 +17,9 @@ pub fn runner(network: &Option<Networks>) {
             run::run("OrAnd", Networks::Network3, &test_cases, layers, nodes)
         }
         None => {
-            run::run(
-                "OrAnd",
-                Networks::Network1,
-                &test_cases,
-                layers.clone(),
-                nodes.clone(),
-            );
-            run::run("OrAnd", Networks::Network2, &test_cases, layers, nodes);
+            Networks::iter().for_each(|network| {
+                runner(&Some(network));
+            });
         }
     }
 }

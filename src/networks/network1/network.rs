@@ -1,4 +1,4 @@
-use crate::traits::network_traits::BaseNetwork;
+use crate::traits::{generic_test_case::BatchResult, network_traits::BaseNetwork};
 
 use super::layer::Layer;
 
@@ -102,12 +102,26 @@ impl BaseNetwork for Network1 {
     fn revert(&mut self) {
         self.layers.iter_mut().for_each(|x| x.revert());
     }
-    #[allow(unused_variables)]
     fn learn_from_testcases<I, O>(
         &mut self,
         test_cases: &Vec<crate::traits::generic_test_case::GenericTestCase<I, O>>,
         rate: f64,
-    ) {
-        todo!()
+        error_fn: Option<fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>>,
+    ) -> Result<BatchResult, String> {
+        let pre = self.test_all(test_cases, error_fn);
+        self.rand_weights(rate);
+        if pre.is_err() {
+            return pre;
+        }
+        let post = self.test_all(test_cases, None);
+        if post.is_err() {
+            self.revert();
+            return pre;
+        }
+        if post.clone().unwrap().error > pre.clone().unwrap().error {
+            self.revert();
+            return pre;
+        }
+        return post;
     }
 }

@@ -18,7 +18,12 @@ pub trait BaseNetwork: Clone {
     fn internal_nodes(&self) -> usize;
     fn rand_weights(&mut self, rate: f64);
     fn run(&mut self, initial_inputs: Vec<f64>) -> Vec<f64>;
-    fn learn_from_testcases<I, O>(&mut self, test_cases: &Vec<GenericTestCase<I, O>>, rate: f64);
+    fn learn_from_testcases<I, O>(
+        &mut self,
+        test_cases: &Vec<GenericTestCase<I, O>>,
+        rate: f64,
+        error_fn: Option<fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>>,
+    ) -> Result<BatchResult, String>;
 
     //result is the value compared to previous success rate, 1.0 would be same as previous
     // result is a ratio (higher is better)
@@ -131,18 +136,23 @@ pub trait BaseNetwork: Clone {
         let mut best_error = 1.0;
         let mut last_rate_change = 0;
         while i < max_iterations && test_all_result.error > min_error {
-            test_all_result = match self.test_all(&test_cases, error_fn) {
+            test_all_result = match self.learn_from_testcases(&test_cases, rate, error_fn) {
                 Ok(r) => r,
                 Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
             };
+            // test_all_result = match self.test_all(&test_cases, error_fn) {
+            //     Ok(r) => r,
+            //     Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
+            // };
             if test_all_result.error < best_error {
                 best_error = test_all_result.error;
                 rate *= 0.99;
                 last_rate_change = i;
                 // println!("=====learn, rate lowering to {:.3}", rate);
-            } else {
-                self.revert();
             }
+            // else {
+            //     self.revert();
+            // }
             if i - last_rate_change > 5 {
                 rate *= 1.05;
                 // println!("=====heating up, rate increasing to {:.3}", rate);
