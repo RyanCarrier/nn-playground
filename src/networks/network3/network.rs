@@ -98,14 +98,16 @@ impl BaseNetwork for Network3 {
             //figure out A^l gradients (dE/dA^l)
             for layer_index in (0..(layers - 1)).rev() {
                 let layer_len = layer_result_gradients[layer_index].len();
-                let deeper_layer = layer_result_gradients[layer_index + 1].clone();
+                let deeper_layer_grad = layer_result_gradients[layer_index + 1].clone();
                 for j in 0..layer_len {
                     let mut temp_grad = 0.0;
-                    for k in 0..deeper_layer.len() {
+                    for k in 0..deeper_layer_grad.len() {
                         //this is the dA[l+1]/dO[l+1]
                         if layer_results[layer_index + 1][k] > 0.0 {
+                            //DE/DA[l+1]
+                            //dO[l+1]/dw[l]
                             temp_grad +=
-                                self.layers[layer_index + 1].weights[k][j] * deeper_layer[k]
+                                self.layers[layer_index + 1].weights[k][j] * deeper_layer_grad[k]
                         }
                     }
                     layer_result_gradients[layer_index][j] = temp_grad;
