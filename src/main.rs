@@ -50,6 +50,7 @@ enum DataSet {
     Or,
     And,
     AndOr,
+    Xor,
 }
 
 fn main() {
@@ -81,6 +82,7 @@ fn run_with(runner: Option<Runner>, network: &Option<Networks>) {
             Some(DataSet::And) => cases::simple::and::runner(network),
             //lol andor orand
             Some(DataSet::AndOr) => cases::simple::or_and::runner(network),
+            Some(DataSet::Xor) => cases::simple::xor::runner(network),
             None => DataSet::iter()
                 .for_each(|x| run_with(Some(Runner::Data(DataArgs { data: Some(x) })),network)),
         },
