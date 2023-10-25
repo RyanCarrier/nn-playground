@@ -70,7 +70,7 @@ fn run_with(runner: Option<Runner>, network: &Option<Networks>) {
         Some(Runner::PlayGame(g)) => match g.data {
             Some(GameSet::TikTakToes) => {
                 let game = TikTakToes;
-                let mut network = Network1::new(game.input_nodes(),game.output_nodes(), 10,10,None);
+                let mut network = Network1::new(game.input_nodes(),game.output_nodes(), 10,10,|x|x.max(0.0));
                 play_game(game, &mut network);
             }
             Some(GameSet::TikTakToesTest) => panic!("not implemented"),

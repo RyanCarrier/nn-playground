@@ -4,7 +4,7 @@ use crate::{networks::Networks, run, traits::generic_test_case::GenericTestCase}
 
 pub fn runner(network: &Option<Networks>) {
     let test_cases = TestCaseOr::get_all_generic();
-    let layers = 1..3;
+    let layers = 2..3;
     let nodes = 2..6;
     match network {
         Some(Networks::Network1) => run::run("Or", Networks::Network1, &test_cases, layers, nodes),
@@ -39,16 +39,14 @@ mod tests {
                     nodes: vec![Node::new_paths(vec![1.0, 1.0, 1.0])],
                 },
             ],
-            output_fn: |x| if x > 0.5 { 1.0 } else { 0.0 },
+            activation_fn: |x| if x > 0.5 { 1.0 } else { 0.0 },
         };
-        let error = network
-            .test_all(&test_cases, Some(TestCaseOr::error_fn))
-            .unwrap();
+        let error = network.test_all(&test_cases, None).unwrap();
         assert_eq!(error.error, 0.0);
     }
 
     fn default_network() -> network::Network1 {
-        network::Network1::new(2, 1, 3, 1, Some(|x| x.min(1.0).max(0.0)))
+        network::Network1::new(2, 1, 3, 1, |x| x.max(0.0))
     }
 
     #[test]
@@ -56,7 +54,7 @@ mod tests {
         let test_cases = TestCaseOr::get_all_generic();
         for _ in 0..20 {
             let mut network = default_network();
-            match network.learn(&test_cases, Some(100_000), None, None) {
+            match network.learn(&test_cases, Some(100_000), None, None, None, |_| 1.0) {
                 Ok(_) => (),
                 Err(e) => panic!("{}", e),
             }
@@ -65,7 +63,7 @@ mod tests {
     }
 
     fn test(mut network: network::Network1) {
-        let error = network.test_all(&TestCaseOr::get_all_generic(), Some(TestCaseOr::error_fn));
+        let error = network.test_all(&TestCaseOr::get_all_generic(), None);
         assert!(error.is_ok());
         assert_eq!(error.unwrap().error, 0.0);
     }

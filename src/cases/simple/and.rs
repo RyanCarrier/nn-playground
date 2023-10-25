@@ -25,7 +25,7 @@ mod tests {
     use super::TestCaseAnd;
 
     fn default_network() -> network::Network1 {
-        network::Network1::new(2, 1, 3, 2, None)
+        network::Network1::new(2, 1, 3, 2, |x: f64| x.max(0.0))
     }
 
     #[test]
@@ -33,7 +33,7 @@ mod tests {
         let test_cases = TestCaseAnd::get_all_generic();
         for _ in 0..20 {
             let mut network = default_network();
-            match network.learn(&test_cases, Some(100_000), None, None) {
+            match network.learn(&test_cases, Some(100_000), None, None, None, |_| 1.0) {
                 Ok(_) => (),
                 Err(e) => panic!("{}", e),
             }
@@ -43,7 +43,7 @@ mod tests {
 
     fn test(mut network: network::Network1) {
         let test_cases = TestCaseAnd::get_all_generic();
-        let error = network.test_all(&test_cases, Some(TestCaseAnd::error_fn));
+        let error = network.test_all(&test_cases, None);
         assert!(error.is_ok());
         assert_eq!(error.unwrap().error, 0.0);
     }
@@ -53,13 +53,6 @@ pub struct TestCaseAnd {
     output: f64,
 }
 impl TestCaseAnd {
-    pub fn error_fn(output: &Vec<f64>, expected_output: &Vec<f64>) -> Vec<f64> {
-        output
-            .iter()
-            .zip(expected_output.iter())
-            .map(|(x, y)| (x - y).powi(2))
-            .collect()
-    }
     pub fn to_generic(&self) -> GenericTestCase<Vec<f64>, f64> {
         GenericTestCase {
             input: self.input.to_vec(),

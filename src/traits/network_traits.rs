@@ -11,7 +11,7 @@ pub trait BaseNetwork: Clone {
         output_nodes: usize,
         internal_nodes: usize,
         internal_layers: usize,
-        activation_fn: Option<fn(f64) -> f64>,
+        activation_fn: fn(f64) -> f64,
     ) -> Self;
     fn title(&self) -> String;
     fn internel_layers(&self) -> usize;
@@ -22,7 +22,9 @@ pub trait BaseNetwork: Clone {
         &mut self,
         test_cases: &Vec<GenericTestCase<I, O>>,
         rate: f64,
-        error_fn: Option<fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>>,
+        error_fn: Option<fn(f64, f64) -> f64>,
+        d_error_fn: Option<fn(f64, f64) -> f64>,
+        d_activation_fn: fn(f64) -> f64,
     ) -> Result<BatchResult, String>;
 
     //result is the value compared to previous success rate, 1.0 would be same as previous
@@ -33,34 +35,28 @@ pub trait BaseNetwork: Clone {
     fn test<I, O>(
         &mut self,
         test_case: &GenericTestCase<I, O>,
-        error_fn: Option<fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>>,
+        error_fn: Option<fn(f64, f64) -> f64>,
     ) -> Result<TestResult, String> {
         let result = self.run(test_case.get_input());
-        let result_error: f64 = Self::or_mse(error_fn, &result, &test_case.output)
-            .into_iter()
-            .sum();
+        let errors = result
+            .iter()
+            .zip(test_case.output.iter())
+            .map(|(y, t)| Self::or_mse(error_fn, *y, *t));
+        let result_error = errors.sum::<f64>() / test_case.output.len() as f64;
         Ok(TestResult {
             result,
             expected: test_case.output.clone(),
             error: result_error,
         })
     }
-    fn or_mse(
-        error_fn: Option<fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>>,
-        output: &Vec<f64>,
-        expected_output: &Vec<f64>,
-    ) -> Vec<f64> {
+    fn or_mse(error_fn: Option<fn(f64, f64) -> f64>, output: f64, expected_output: f64) -> f64 {
         match error_fn {
             Some(x) => x(output, expected_output),
             None => Self::mse(output, expected_output),
         }
     }
-    fn mse(output: &Vec<f64>, expected_output: &Vec<f64>) -> Vec<f64> {
-        output
-            .iter()
-            .zip(expected_output.iter())
-            .map(|(x, y)| (x - y).powi(2) / 2.0)
-            .collect()
+    fn mse(output: f64, expected_output: f64) -> f64 {
+        (expected_output - output).powi(2) / 2.0
     }
 
     //returns the average difference between the output and the expected output (0.0 is perfect, 1.0
@@ -68,7 +64,7 @@ pub trait BaseNetwork: Clone {
     fn test_all<I, O>(
         &mut self,
         test_cases: &Vec<GenericTestCase<I, O>>,
-        error_fn: Option<fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>>,
+        error_fn: Option<fn(f64, f64) -> f64>,
     ) -> Result<BatchResult, String> {
         let error_fn = match error_fn {
             Some(x) => x,
@@ -89,17 +85,23 @@ pub trait BaseNetwork: Clone {
     fn print_all<I, O>(
         &mut self,
         test_cases: &Vec<GenericTestCase<I, O>>,
-        error_fn: fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>,
+        error_fn: Option<fn(f64, f64) -> f64>,
     ) -> Result<(), String> {
         let cases_len = test_cases.len();
+        let error_fn = match error_fn {
+            Some(ef) => ef,
+            None => Self::mse,
+        };
         for i in 0..cases_len {
             let result = self.run(test_cases[i].get_input());
             println!("===case {}===\n{}", i, &test_cases[i].display);
             println!(
-                "test_result: [{}], diff: [{}]",
-                result[0].clone(),
-                error_fn(&test_cases[i].output, &test_cases[i].output)
-                    .into_iter()
+                "test_result: [{:?}], diff: [{}]",
+                result.clone(),
+                result
+                    .iter()
+                    .zip(test_cases[i].output.iter())
+                    .map(|(y, t)| error_fn(*y, *t))
                     .sum::<f64>()
             );
         }
@@ -108,17 +110,28 @@ pub trait BaseNetwork: Clone {
     fn auto_learn<I, O>(
         &mut self,
         test_cases: &Vec<GenericTestCase<I, O>>,
-        error_fn: Option<fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>>,
+        error_fn: Option<fn(f64, f64) -> f64>,
+        d_error_fn: Option<fn(f64, f64) -> f64>,
+        d_activation_fn: fn(f64) -> f64,
     ) -> Result<Vec<f64>, String> {
         //we probably should have a timeout heh
-        self.learn(test_cases, None, None, error_fn)
+        self.learn(
+            test_cases,
+            None,
+            None,
+            error_fn,
+            d_error_fn,
+            d_activation_fn,
+        )
     }
     fn learn<I, O>(
         &mut self,
         test_cases: &Vec<GenericTestCase<I, O>>,
         max_iterations: Option<usize>,
         min_error: Option<f64>,
-        error_fn: Option<fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>>,
+        error_fn: Option<fn(f64, f64) -> f64>,
+        d_error_fn: Option<fn(f64, f64) -> f64>,
+        d_activation_fn: fn(f64) -> f64,
     ) -> Result<Vec<f64>, String> {
         let mut learn_errors = Vec::new();
         let mut test_all_result = self.test_all(&test_cases, None)?;
@@ -136,12 +149,18 @@ pub trait BaseNetwork: Clone {
         let mut best_error = 1.0;
         let mut last_rate_change = 0;
         while i < max_iterations && test_all_result.error > min_error {
-            test_all_result = match self.learn_from_testcases(&test_cases, rate, error_fn) {
+            test_all_result = match self.learn_from_testcases(
+                &test_cases,
+                rate,
+                error_fn,
+                d_error_fn,
+                d_activation_fn,
+            ) {
                 Ok(r) => r,
                 Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
             };
             //wait for 1s
-            std::thread::sleep(std::time::Duration::from_millis(1));
+            std::thread::sleep(std::time::Duration::from_millis(10));
             println!("Learn Iteration {}, err:\t{}", i, test_all_result.error);
 
             // test_all_result = match self.test_all(&test_cases, error_fn) {

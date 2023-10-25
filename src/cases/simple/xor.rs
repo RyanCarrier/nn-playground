@@ -4,8 +4,8 @@ use crate::{networks::Networks, run, traits::generic_test_case::GenericTestCase}
 
 pub fn runner(network: &Option<Networks>) {
     let test_cases = TestCaseXor::get_all_generic();
-    let layers = 2..3;
-    let nodes = 2..3;
+    let layers = 3..5;
+    let nodes = 3..4;
     match network {
         Some(Networks::Network1) => run::run("Xor", Networks::Network1, &test_cases, layers, nodes),
         Some(Networks::Network2) => run::run("Xor", Networks::Network2, &test_cases, layers, nodes),
@@ -24,14 +24,14 @@ mod tests {
     use crate::traits::network_traits::BaseNetwork;
 
     fn default_network() -> network::Network3 {
-        network::Network3::new(2, 1, 3, 2, Some(|x| x.max(0.0)))
+        network::Network3::new(2, 1, 3, 2, |x| x.max(0.0))
     }
 
     #[test]
     fn learn() {
         let test_cases = TestCaseXor::get_all_generic();
         let mut network = default_network();
-        match network.learn(&test_cases, Some(100_000), None, None) {
+        match network.learn(&test_cases, Some(100_000), None, None, None, |_| 1.0) {
             Ok(_) => (),
             Err(e) => panic!("{}", e),
         }
@@ -39,7 +39,7 @@ mod tests {
     }
 
     fn test(mut network: network::Network3) {
-        let error = network.test_all(&TestCaseXor::get_all_generic(), Some(TestCaseXor::error_fn));
+        let error = network.test_all(&TestCaseXor::get_all_generic(), None);
         assert!(error.is_ok());
         assert_eq!(error.unwrap().error, 0.0);
     }

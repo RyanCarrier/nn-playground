@@ -34,10 +34,10 @@ mod tests {
 
     use super::TestCaseOrAnd;
     fn get_network1() -> Network1 {
-        Network1::new(3, 1, 4, 1, None)
+        Network1::new(3, 1, 4, 1, |x| x.max(0.0))
     }
     fn get_network2() -> Network2 {
-        Network2::new(3, 1, 4, 1, None)
+        Network2::new(3, 1, 4, 1, |x| x.max(0.0))
     }
 
     #[test]
@@ -45,13 +45,13 @@ mod tests {
         let test_cases = TestCaseOrAnd::get_all_generic();
         for _ in 0..20 {
             let mut network = get_network1();
-            match network.learn(&test_cases, Some(100_000), None, None) {
+            match network.learn(&test_cases, Some(100_000), None, None, None, |_| 1.0) {
                 Ok(err_history) => println!("err_history length: {}", err_history.len()),
                 Err(e) => panic!("{}", e),
             }
             test(network);
             let mut network = get_network2();
-            match network.learn(&test_cases, Some(100_000), None, None) {
+            match network.learn(&test_cases, Some(100_000), None, None, None, |_| 1.0) {
                 Ok(err_history) => println!("err_history length: {}", err_history.len()),
                 Err(e) => panic!("{}", e),
             }

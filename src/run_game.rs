@@ -16,7 +16,7 @@ pub fn run_game<I: Copy + Debug + ToString>(
         for node in nodes.clone() {
             run_game_network(
                 // Network1::new(inputs, outputs, node, layer, Some(|x| x.round())),
-                Network1::new(inputs, outputs, node, layer, None),
+                Network1::new(inputs, outputs, node, layer, |x| x.max(0.0)),
                 game,
             );
         }

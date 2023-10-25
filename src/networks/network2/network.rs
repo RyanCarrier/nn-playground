@@ -1,4 +1,7 @@
-use crate::traits::{generic_test_case::BatchResult, network_traits::BaseNetwork};
+use crate::traits::{
+    generic_test_case::{BatchResult, GenericTestCase},
+    network_traits::BaseNetwork,
+};
 
 use super::layer::Layer;
 
@@ -17,22 +20,16 @@ impl BaseNetwork for Network2 {
         output_nodes: usize,
         internal_nodes: usize,
         internal_layers: usize,
-        output_fn: Option<fn(f64) -> f64>,
+        activation_fn: fn(f64) -> f64,
     ) -> Network2 {
-        let output_fn = match output_fn {
-            Some(x) => x,
-            None => |x: f64| x.min(1.0).max(0.0),
-            // None => |x: f64| x.max(0.0),
-            // None => |x| x,
-        };
         Network2 {
             layers: {
                 let mut layers: Vec<Layer> = Vec::new();
-                layers.push(Layer::new(input_nodes, internal_nodes, output_fn));
+                layers.push(Layer::new(input_nodes, internal_nodes, activation_fn));
                 for _ in 0..(internal_layers - 1) {
-                    layers.push(Layer::new(internal_nodes, internal_nodes, output_fn));
+                    layers.push(Layer::new(internal_nodes, internal_nodes, activation_fn));
                 }
-                layers.push(Layer::new(internal_nodes, output_nodes, output_fn));
+                layers.push(Layer::new(internal_nodes, output_nodes, activation_fn));
                 layers
             },
         }
@@ -62,11 +59,14 @@ impl BaseNetwork for Network2 {
         self.layers.iter_mut().for_each(|x| x.revert());
     }
 
+    #[allow(unused_variables)]
     fn learn_from_testcases<I, O>(
         &mut self,
-        test_cases: &Vec<crate::traits::generic_test_case::GenericTestCase<I, O>>,
+        test_cases: &Vec<GenericTestCase<I, O>>,
         rate: f64,
-        error_fn: Option<fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>>,
+        error_fn: Option<fn(f64, f64) -> f64>,
+        d_error_fn: Option<fn(f64, f64) -> f64>,
+        d_activation_fn: fn(f64) -> f64,
     ) -> Result<BatchResult, String> {
         let pre = self.test_all(test_cases, error_fn);
         self.rand_weights(rate);

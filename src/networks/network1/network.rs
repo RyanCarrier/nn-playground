@@ -1,4 +1,7 @@
-use crate::traits::{generic_test_case::BatchResult, network_traits::BaseNetwork};
+use crate::traits::{
+    generic_test_case::{BatchResult, GenericTestCase},
+    network_traits::BaseNetwork,
+};
 
 use super::layer::Layer;
 
@@ -6,7 +9,7 @@ use super::layer::Layer;
 #[derive(Clone)]
 pub struct Network1 {
     pub layers: Vec<Layer>,
-    pub output_fn: fn(f64) -> f64,
+    pub activation_fn: fn(f64) -> f64,
 }
 
 impl BaseNetwork for Network1 {
@@ -18,7 +21,7 @@ impl BaseNetwork for Network1 {
         output_nodes: usize,
         internal_nodes: usize,
         internal_layers: usize,
-        output_fn: Option<fn(f64) -> f64>,
+        activation_fn: fn(f64) -> f64,
     ) -> Network1 {
         Network1 {
             layers: {
@@ -30,12 +33,7 @@ impl BaseNetwork for Network1 {
                 layers.push(Layer::new(output_nodes, internal_nodes));
                 layers
             },
-            output_fn: match output_fn {
-                Some(x) => x,
-                // None => |x| x.min(1.0).max(0.0),
-                None => |x| x.max(0.0),
-                // None => |x| x,
-            },
+            activation_fn,
         }
     }
     fn replace_self(&mut self, other: &mut Self) {
@@ -81,7 +79,7 @@ impl BaseNetwork for Network1 {
                 .collect::<Vec<f64>>();
             let _ = self.layers[i].run(inputs);
         }
-        let output_fn = self.output_fn;
+        let output_fn = self.activation_fn;
         // match self.layers.last() {
         //     Some(x) => Ok(x
         //         .nodes
@@ -102,11 +100,14 @@ impl BaseNetwork for Network1 {
     fn revert(&mut self) {
         self.layers.iter_mut().for_each(|x| x.revert());
     }
+    #[allow(unused_variables)]
     fn learn_from_testcases<I, O>(
         &mut self,
-        test_cases: &Vec<crate::traits::generic_test_case::GenericTestCase<I, O>>,
+        test_cases: &Vec<GenericTestCase<I, O>>,
         rate: f64,
-        error_fn: Option<fn(&Vec<f64>, &Vec<f64>) -> Vec<f64>>,
+        error_fn: Option<fn(f64, f64) -> f64>,
+        d_error_fn: Option<fn(f64, f64) -> f64>,
+        d_activation_fn: fn(f64) -> f64,
     ) -> Result<BatchResult, String> {
         let pre = self.test_all(test_cases, error_fn);
         self.rand_weights(rate);
