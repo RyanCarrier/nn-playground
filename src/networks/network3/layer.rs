@@ -20,6 +20,10 @@ impl Layer {
             .map(|_| (0..input_size).map(|_| rand_rate()).collect())
             .collect();
         let bias = (0..output_size).map(|_| rand_rate()).collect();
+        // let weights = (0..output_size)
+        //     .map(|_| (0..input_size).map(|_| 0.5).collect())
+        //     .collect();
+        // let bias = (0..output_size).map(|_| 0.1).collect();
 
         Layer {
             // weights: vec![vec![0.1; input_size]; output_size],

@@ -150,15 +150,19 @@ impl BaseNetwork for Network3 {
                 }
             }
         }
-        // println!("total total_bias_gradients {:?}", total_bias_gradients);
+        println!("total total_bias_gradients {:?}", total_bias_gradients);
+        total_weight_gradients
+            .iter()
+            .for_each(|x| println!("total_weight_gradients: {:?}", x));
         let test_cases_len = test_cases.len() as f64;
         // self.layers
         //     .iter()
         //     .for_each(|x| println!("Pre  Weights: {:?}", x.weights));
-        let my_rate = 0.1;
+        let my_rate = 0.2;
         for l in 0..layers {
             for j in 0..total_bias_gradients[l].len() {
-                self.layers[l].bias[j] -= my_rate * (total_bias_gradients[l][j] / test_cases_len);
+                self.layers[l].bias[j] -=
+                    0.1 * my_rate * (total_bias_gradients[l][j] / test_cases_len);
             }
             for j in 0..total_weight_gradients[l].len() {
                 for i in 0..total_weight_gradients[l][j].len() {
@@ -170,6 +174,9 @@ impl BaseNetwork for Network3 {
         // self.layers
         //     .iter()
         //     .for_each(|x| println!("Post Weights: {:?}", x.weights));
+        // self.layers
+        //     .iter()
+        //     .for_each(|x| println!("Post Biases: {:?}", x.bias));
         self.test_all(test_cases, error_fn)
     }
 }
