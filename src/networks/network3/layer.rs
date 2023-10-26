@@ -44,7 +44,7 @@ impl Layer {
         self.old_bias = self.bias.clone();
         self.bias.iter_mut().for_each(|x| *x += 0.1 * rand_rate());
     }
-    pub fn run(&self, inputs: Vec<f64>) -> Vec<f64> {
+    pub fn run_total(&self, inputs: Vec<f64>) -> Vec<f64> {
         self.weights
             .iter()
             .map(|paths| {
@@ -55,8 +55,14 @@ impl Layer {
                     .sum::<f64>()
             })
             .zip(self.bias.iter())
-            .map(|(x, y)| (self.output_fn)(x + y))
+            .map(|(x, y)| (x + y))
             .collect()
+    }
+    pub fn run(&self, inputs: Vec<f64>) -> Vec<f64> {
+        self.run_activate(self.run_total(inputs))
+    }
+    pub fn run_activate(&self, inputs: Vec<f64>) -> Vec<f64> {
+        inputs.iter().map(|x| (self.output_fn)(*x)).collect()
     }
 
     pub fn revert(&mut self) {

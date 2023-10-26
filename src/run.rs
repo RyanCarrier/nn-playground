@@ -38,11 +38,11 @@ pub fn run<I, O>(
                     daf,
                 ),
                 Networks::Network3 => run_network(
-                    Network3::new(inputs, outputs, node, layer, af),
+                    Network3::new_default(inputs, outputs, node, layer),
                     &test_cases,
                     None,
                     None,
-                    daf,
+                    Network3::d_activation_fn,
                 ),
             }
         }

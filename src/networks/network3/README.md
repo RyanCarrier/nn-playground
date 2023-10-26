@@ -32,7 +32,7 @@ $E(y,t)$: Error function, how 'heavy' or how much error is in this output compar
 
 #### defs
 
-$o^l_j=b^l_j+\displaystyle\sum_{i=0}^{N^l}{a_i^{l-1}w^l_{ij}}$
+$o^l_j=b^l_j+\sum_{i=0}^{N^l}{a_i^{l-1}w^l_{ij}}$
 
 $\gamma(o^l_i)=\begin{cases}
 o^l_i \gt0 & o^l_i\\
@@ -50,9 +50,9 @@ $E=\frac{1}{2}(x-y)^2$
 
 We want to know how much does the error change (and which way), based on changes in the each weight and bias. That way we can make adjustments to weights and biases that we can be pretty confident will reduce the error rate.
 
-$\displaystyle\frac{\partial{E}}{\partial{w^l_{ij}}}$: error change wrt a weight
+$\frac{\partial{E}}{\partial{w^l_{ij}}}$: error change wrt a weight
 
-$\displaystyle\frac{\partial{E}}{\partial{b^l_{j}}}$: error wrt a bias
+$\frac{\partial{E}}{\partial{b^l_{j}}}$: error wrt a bias
 
 $E=\frac{1}{2}(t-y)^2$
 
@@ -64,7 +64,6 @@ Starting with the final (output layer)
 #### Output layer
 
 $
-\displaystyle
 \frac{\partial{E}}{\partial{y}}
 \frac{\partial{y}}{\partial{O^L}}
 \frac{\partial{O^L}}{\partial{w^L_{ij}}}
@@ -79,25 +78,25 @@ $
 And note that $y\equiv A^L$
 
 We can represent all 
-$\displaystyle
+$
 \frac{\partial{E}}{\partial{y}},
-\frac{\partial{y}}{\partial{o^L_{ij}}}$ and $\displaystyle
+\frac{\partial{y}}{\partial{o^L_{ij}}}$ and $
 \frac{\partial{o^L_{ij}}}{\partial{w^l_{ij}}}$ individually.
 
 <hr>
 
 $E=\frac{1}{2}(t-y)^2$
 
-$\displaystyle\frac{\partial{E}}{\partial{y}}=y-t$
+$\frac{\partial{E}}{\partial{y}}=y-t$
 
 <hr>
 
 $y(x)=A^L=\gamma (O^L)$
 
-$\displaystyle\frac{\partial{y}}{\partial{O^L}}$ is not cts as $\gamma$ is not cts and so ;
+$\frac{\partial{y}}{\partial{O^L}}$ is not cts as $\gamma$ is not cts and so ;
 
 $
-\displaystyle\frac{\partial{y}}{\partial{O^L}}=
+\frac{\partial{y}}{\partial{O^L}}=
 \begin{cases}
 o^l_i \gt0 & 1\\
 o^l_i = 0 & undefined...(0)\\
@@ -106,20 +105,19 @@ o^l_i \lt0 & 0
 
 <hr>
 
-$O^L=B^L+\displaystyle\sum{A^{L-1}W^L}$
+$O^L=B^L+\sum{A^{L-1}W^L}$
 
-$O^L=(o^L_m)=(b^L_m+\displaystyle\sum_{k=0}^{N^L}{a^{L-1}_k w^L_{km}})$
+$O^L=(o^L_m)=(b^L_m+\sum_{k=0}^{N^L}{a^{L-1}_k w^L_{km}})$
 
 The only piece of the set which would not derive to 0, would be the term with $m=j$, so;
 
-$O^L\equiv o^L_j=b^L_j+\displaystyle\sum_{k=0}^{N^L}{a^{L-1}_k w^L_{kj}}$
+$O^L\equiv o^L_j=b^L_j+\sum_{k=0}^{N^L}{a^{L-1}_k w^L_{kj}}$
 
-$\displaystyle\frac{\partial{O^L}}{\partial{w^L_{ij}}}={a_i^{L-1}}$
+$\frac{\partial{O^L}}{\partial{w^L_{ij}}}={a_i^{L-1}}$
 
 <hr>
 
 $
-\displaystyle
 \frac{\partial{E}}{\partial{w^L_{ij}}}
 =\
 \frac{\partial{E}}{\partial{y}}
@@ -134,7 +132,6 @@ $
 #### Intermediate layers
 
 $
-\displaystyle
 \frac{\partial{E}}{\partial{w^{L-1}_{ij}}}
 =\
 \frac{\partial{E}}{\partial{A^{L-1}}}
@@ -154,7 +151,6 @@ $
 For the next layer...
 
 $
-\displaystyle
 \frac{\partial{E}}{\partial{w^{L-2}_{ij}}}
 =\
 \frac{\partial{E}}{\partial{A^{L-2}}}
@@ -176,7 +172,6 @@ So more generically;
 
 
 $
-\displaystyle
 \frac{\partial{E}}{\partial{w^{l}_{ij}}}
 =\
 \frac{\partial{E}}{\partial{A^{l}}}
@@ -195,13 +190,11 @@ $
 <hr>
 
 $
-\displaystyle
 \frac{\partial{E}}{\partial{A^{l+1}}}
 $
 will be provided by the next (previous in regards to back propogation) layer.
 
 $
-\displaystyle
 \frac{\partial{A^{l+1}}}{\partial{O^{l+1}}}
 =\begin{cases}
 o^{l+1}_i \gt0 & 1\\
@@ -210,14 +203,12 @@ o^{l+1}_i \le0 & 0\
 $
 
 $
-\displaystyle
 \frac{\partial{O^{l+1}}}{\partial{A^{l}}}
 =\
 \sum^{N^{l+1}}_{i=0} W^{l+1}_i
 $
 
 $
-\displaystyle
 \frac{\partial{A^{l}}}{\partial{w^{l}_{ij}}}
 =\
 \frac{\partial{A^{l}}}{\partial{O^{l}}}
@@ -231,7 +222,6 @@ $
 <hr>
 
 $
-\displaystyle
 \frac{\partial{E}}{\partial{w^{l}_{ij}}}
 =\
 \frac{\partial{E}}{\partial{A^{l}}}
@@ -255,7 +245,6 @@ $
 ### Bias
 
 $
-\displaystyle
 \frac{\partial{A^{l}}}{\partial{B^{l}}}
 =\
 \frac{\partial{A^{l}}}{\partial{O^{l}}}
@@ -267,7 +256,6 @@ o^{l}_i \le0 & 0\
 $, as differentiating over the bias will always be 1
 
 $
-\displaystyle
 \frac{\partial{E^{l}}}{\partial{B^{l}}}
 =\
 \frac{\partial{E}}{\partial{A^{l}}}

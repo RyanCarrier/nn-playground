@@ -79,6 +79,135 @@ impl BaseNetwork for Network3 {
         d_error_fn: Option<fn(f64, f64) -> f64>,
         d_activation_fn: fn(f64) -> f64,
     ) -> Result<BatchResult, String> {
+        // attempt 2 at back propogation
+        // main change is not consolidating all the gradients before applying
+        // so every round we apply gradients and hopefully we can follow better paths to success
+        // rather than following path to the lowest average error (per whole set, ie
+        // always spitting a result that will be 'mostly correct' all the time or something like
+        // that)
+        // this is cause if done all at once we we want half results to be 0.0 and half to be 1.0
+        // so consolidating made it so we want it to be 0.5 all the time... lol
+        let d_error_fn = match d_error_fn {
+            Some(x) => x,
+            None => |y: f64, t: f64| (y - t),
+        };
+        let rate = 0.2;
+
+        //cmon guys back propogation is simple 8), just copy it from chatgpt or smth
+        let layers = self.layers.len();
+
+        for case in test_cases {
+            let input = case.get_input();
+            let (layer_outputs, layer_activations) = self.run_by_steps(&input);
+            let mut layer_gradients: Vec<Vec<f64>> = layer_activations
+                .iter()
+                .map(|x| vec![0.0; x.len()])
+                .collect();
+            //output layer gralayer_outputs,ds (dE/dA^L)
+            layer_gradients[layers - 1] = layer_activations[layers - 1]
+                .iter()
+                .zip(case.output.iter())
+                .map(|(y, t)| d_error_fn(*y, *t))
+                .collect();
+            // println!("layer results: {:?}", layer_results);
+            // println!("last layer grads: {:?}", layer_result_gradients);
+            //figure out A^l gradients (dE/dA^l)
+            //move from back to front
+            for layer_index in (0..(layers - 1)).rev() {
+                for j in 0..layer_gradients[layer_index].len() {
+                    let mut temp_grad = 0.0;
+                    for k in 0..layer_gradients[layer_index + 1].len() {
+                        temp_grad += d_activation_fn(layer_outputs[layer_index + 1][k])
+                            * self.layers[layer_index + 1].weights[k][j]
+                            * layer_gradients[layer_index + 1][k]
+                    }
+                    layer_gradients[layer_index][j] = temp_grad;
+                }
+            }
+            //this was consolidation step, but now it will be application
+            for l in 0..layers {
+                let prev_layer_activations = if l == 0 {
+                    &input
+                } else {
+                    &layer_activations[l - 1]
+                };
+                for j in 0..layer_activations[l].len() {
+                    self.layers[l].bias[j] -=
+                        rate * d_activation_fn(layer_outputs[l][j]) * layer_gradients[l][j];
+                    for i in 0..prev_layer_activations.len() {
+                        self.layers[l].weights[j][i] -= rate
+                            // * d_activation_fn(layer_outputs[l - 1][i])
+                            * layer_gradients[l][j]
+                            * prev_layer_activations[i];
+                    }
+                }
+            }
+            // println!(
+            //     "input: {:?}, expected output:{:?}, got:{:?}",
+            //     input,
+            //     case.output,
+            //     layer_results[layers - 1]
+            // );
+            // println!("layer_results: {:?}", layer_results);
+        }
+        // self.layers
+        //     .iter()
+        //     .for_each(|x| println!("Pre  Weights: {:?}", x.weights));
+        // self.layers
+        //     .iter()
+        //     .for_each(|x| println!("Post Weights: {:?}", x.weights));
+        // self.layers
+        //     .iter()
+        //     .for_each(|x| println!("Post Biases: {:?}", x.bias));
+        self.test_all(test_cases, error_fn)
+    }
+}
+impl Network3 {
+    // pub fn step(&self,layer:usize, inputs: Vec<f64>) -> Vec<f64> {
+    //     self.layers[layer].run(inputs)
+    // }
+    pub fn new_default(
+        input_nodes: usize,
+        output_nodes: usize,
+        internal_nodes: usize,
+        internal_layers: usize,
+    ) -> Network3 {
+        Network3::new(
+            input_nodes,
+            output_nodes,
+            internal_nodes,
+            internal_layers,
+            Self::activation_fn,
+        )
+    }
+    pub fn run_by_steps(&self, initial_inputs: &Vec<f64>) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
+        let mut layer_outputs: Vec<Vec<f64>> = vec![Vec::new(); self.layers.len()];
+        let mut layer_activations: Vec<Vec<f64>> = vec![Vec::new(); self.layers.len()];
+        layer_outputs[0] = self.layers[0].run_total(initial_inputs.clone());
+        layer_activations[0] = self.layers[0].run_activate(layer_outputs[0].clone());
+        for i in 1..self.layers.len() {
+            layer_outputs[i] = self.layers[i].run(layer_activations[i - 1].clone());
+            layer_activations[i] = self.layers[i].run(layer_outputs[i].clone());
+        }
+        (layer_outputs, layer_activations)
+    }
+    pub fn d_activation_fn(x: f64) -> f64 {
+        let activation = Self::activation_fn(x);
+        activation * (1.0 - activation)
+    }
+    pub fn activation_fn(x: f64) -> f64 {
+        1.0 / (1.0 + f64::exp(-x))
+    }
+
+    #[allow(dead_code, unused_variables)]
+    pub fn learn_from_testcases_first_attempt<I, O>(
+        &mut self,
+        test_cases: &Vec<GenericTestCase<I, O>>,
+        rate: f64,
+        error_fn: Option<fn(f64, f64) -> f64>,
+        d_error_fn: Option<fn(f64, f64) -> f64>,
+        d_activation_fn: fn(f64) -> f64,
+    ) -> Result<BatchResult, String> {
         let error_fn = match error_fn {
             Some(x) => x,
             None => |y: f64, t: f64| (t - y).powi(2) / 2.0,
@@ -102,15 +231,17 @@ impl BaseNetwork for Network3 {
             .iter()
             .map(|x| vec![0.0; x.bias.len()])
             .collect();
-        let rate = 0.2;
+        let rate = 0.1;
 
         for case in test_cases {
             let input = case.get_input();
-            let layer_results = self.run_by_steps(&input);
-            let mut layer_result_gradients: Vec<Vec<f64>> =
-                layer_results.iter().map(|x| vec![0.0; x.len()]).collect();
-            //output layer grads (dE/dA^L)
-            layer_result_gradients[layers - 1] = layer_results[layers - 1]
+            let (layer_outputs, layer_activations) = self.run_by_steps(&input);
+            let mut layer_result_gradients: Vec<Vec<f64>> = layer_activations
+                .iter()
+                .map(|x| vec![0.0; x.len()])
+                .collect();
+            //output layer gralayer_outputs,ds (dE/dA^L)
+            layer_result_gradients[layers - 1] = layer_activations[layers - 1]
                 .iter()
                 .zip(case.output.iter())
                 .map(|(y, t)| d_error_fn(*y, *t))
@@ -132,7 +263,7 @@ impl BaseNetwork for Network3 {
                         //regardless, but only including per node section that is active
                         //DE/DA[l+1]
                         //dO[l+1]/dw[l]
-                        temp_grad += d_activation_fn(layer_results[layer_index + 1][k])
+                        temp_grad += d_activation_fn(layer_outputs[layer_index + 1][k])
                             * self.layers[layer_index + 1].weights[k][j]
                             * deeper_layer_grad[k]
                         // }
@@ -154,12 +285,12 @@ impl BaseNetwork for Network3 {
                 let prev_layer_activations = if l == 0 {
                     &input
                 } else {
-                    &layer_results[l - 1]
+                    &layer_activations[l - 1]
                 };
-                for j in 0..layer_results[l].len() {
+                for j in 0..layer_activations[l].len() {
                     // if layer_results[l][j] > 0.0 {
                     total_bias_gradients[l][j] +=
-                        d_activation_fn(layer_results[l][j]) * layer_result_gradients[l][j];
+                        d_activation_fn(layer_outputs[l][j]) * layer_result_gradients[l][j];
                     // }
                     for i in 0..prev_layer_activations.len() {
                         if prev_layer_activations[i] > 0.0 {
@@ -204,18 +335,5 @@ impl BaseNetwork for Network3 {
         //     .iter()
         //     .for_each(|x| println!("Post Biases: {:?}", x.bias));
         self.test_all(test_cases, Some(error_fn))
-    }
-}
-impl Network3 {
-    // pub fn step(&self,layer:usize, inputs: Vec<f64>) -> Vec<f64> {
-    //     self.layers[layer].run(inputs)
-    // }
-    pub fn run_by_steps(&self, initial_inputs: &Vec<f64>) -> Vec<Vec<f64>> {
-        let mut layer_results: Vec<Vec<f64>> = vec![Vec::new(); self.layers.len()];
-        layer_results[0] = self.layers[0].run(initial_inputs.clone());
-        for i in 1..self.layers.len() {
-            layer_results[i] = self.layers[i].run(layer_results[i - 1].clone());
-        }
-        layer_results
     }
 }
