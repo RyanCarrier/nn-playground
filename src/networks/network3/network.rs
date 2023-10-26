@@ -91,7 +91,7 @@ impl BaseNetwork for Network3 {
             Some(x) => x,
             None => |y: f64, t: f64| (y - t),
         };
-        let rate = 0.2;
+        let rate = 0.3;
 
         //cmon guys back propogation is simple 8), just copy it from chatgpt or smth
         let layers = self.layers.len();
@@ -114,14 +114,14 @@ impl BaseNetwork for Network3 {
             //figure out A^l gradients (dE/dA^l)
             //move from back to front
             for layer_index in (0..(layers - 1)).rev() {
-                for j in 0..layer_gradients[layer_index].len() {
+                for i in 0..layer_gradients[layer_index].len() {
                     let mut temp_grad = 0.0;
-                    for k in 0..layer_gradients[layer_index + 1].len() {
-                        temp_grad += d_activation_fn(layer_outputs[layer_index + 1][k])
-                            * self.layers[layer_index + 1].weights[k][j]
-                            * layer_gradients[layer_index + 1][k]
+                    for j in 0..layer_gradients[layer_index + 1].len() {
+                        temp_grad += d_activation_fn(layer_outputs[layer_index + 1][j])
+                            * self.layers[layer_index + 1].weights[j][i]
+                            * layer_gradients[layer_index + 1][j]
                     }
-                    layer_gradients[layer_index][j] = temp_grad;
+                    layer_gradients[layer_index][i] = temp_grad;
                 }
             }
             //this was consolidation step, but now it will be application
@@ -136,7 +136,7 @@ impl BaseNetwork for Network3 {
                         rate * d_activation_fn(layer_outputs[l][j]) * layer_gradients[l][j];
                     for i in 0..prev_layer_activations.len() {
                         self.layers[l].weights[j][i] -= rate
-                            // * d_activation_fn(layer_outputs[l - 1][i])
+                            * d_activation_fn(layer_outputs[l][j])
                             * layer_gradients[l][j]
                             * prev_layer_activations[i];
                     }

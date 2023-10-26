@@ -34,10 +34,15 @@ $E(y,t)$: Error function, how 'heavy' or how much error is in this output compar
 
 $o^l_j=b^l_j+\sum_{i=0}^{N^l}{a_i^{l-1}w^l_{ij}}$
 
-$\gamma(o^l_i)=\begin{cases}
-o^l_i \gt0 & o^l_i\\
-o^l_i \le0 & 0
-\end{cases}$, we use this because o.min(0.0) is easy, and not very computationally heavy
+<!-- $\gamma(o^l_i)=\begin{cases} -->
+<!-- o^l_i \gt0 & o^l_i\\ -->
+<!-- o^l_i \le0 & 0 -->
+<!-- \end{cases}$, we use this because o.min(0.0) is easy, and not very computationally heavy -->
+
+$\gamma(o^l_i)=\
+\frac{1}{1+e^{-o^l_i}}
+$
+, honestly the idea of using o.min(0.0) felt better, but sigmoid fn is used more often
 
 $A^l=(a^l_{j})=\gamma(o^l_j)$, change our output into a better range of values
 
@@ -93,15 +98,12 @@ $\frac{\partial{E}}{\partial{y}}=y-t$
 
 $y(x)=A^L=\gamma (O^L)$
 
-$\frac{\partial{y}}{\partial{O^L}}$ is not cts as $\gamma$ is not cts and so ;
 
 $
 \frac{\partial{y}}{\partial{O^L}}=
-\begin{cases}
-o^l_i \gt0 & 1\\
-o^l_i = 0 & undefined...(0)\\
-o^l_i \lt0 & 0
-\end{cases}$
+\frac{\partial{A^L}}{\partial{O^L}}=
+\gamma '(O^L)=\gamma{(O^L)}(1-\gamma (O^L))$
+, the derivative of the sigmoid fn
 
 <hr>
 
@@ -122,11 +124,8 @@ $
 =\
 \frac{\partial{E}}{\partial{y}}
 \frac{\partial{y}}{\partial{O^L}}
-\frac{\partial{O^L}}{\partial{w^L_{ij}}}
-=\begin{cases}
-o^l_i \gt0 & (y-t)a_i^{L-1}\\
-o^l_i \le0 & 0
-\end{cases}\
+\frac{\partial{O^L}}{\partial{w^L_{ij}}}=\
+\gamma'(o^l_j)(y_j-t_j)a_i^{L-1}\
 $
 
 #### Intermediate layers
@@ -190,16 +189,12 @@ $
 <hr>
 
 $
-\frac{\partial{E}}{\partial{A^{l+1}}}
-$
+\frac{\partial{E}}{\partial{A^{l+1}}}$
 will be provided by the next (previous in regards to back propogation) layer.
 
 $
 \frac{\partial{A^{l+1}}}{\partial{O^{l+1}}}
-=\begin{cases}
-o^{l+1}_i \gt0 & 1\\
-o^{l+1}_i \le0 & 0\
-\end{cases}\
+=\gamma '(O^{l+1})\
 $
 
 $
@@ -213,31 +208,28 @@ $
 =\
 \frac{\partial{A^{l}}}{\partial{O^{l}}}
 \frac{\partial{O^{l}}}{\partial{w^{l}_{ij}}}
-=\begin{cases}
-o^{l}_i \gt0 & a^{l-1}_i\\
-o^{l}_i \le0 & 0\
-\end{cases}\
+=\gamma '(o^{l}_j)a^{l-1}_{i}\
 $
 
-<hr>
+We will need activation gradient for next layer anyway;
+
+$
+\frac{\partial{E}}{\partial{A^{l}}}\
+=\
+\frac{\partial{E}}{\partial{A^{l+1}}}
+\gamma '(O^{l+1})\
+\sum^{N^{l+1}}_{i=0} W^{l+1}_i\
+$
 
 $
 \frac{\partial{E}}{\partial{w^{l}_{ij}}}
 =\
 \frac{\partial{E}}{\partial{A^{l}}}
 \frac{\partial{A^{l}}}{\partial{w^{l}_{ij}}}
-=\left(\
-\frac{\partial{E}}{\partial{A^{l+1}}}
-\begin{cases}
-o^{l}_i \gt0 & \sum^{N^{l+1}}_{i=0} W^{l+1}_i\\
-o^{l}_i \le0 & 0\
-\end{cases}\
-\right)
+=\
+\frac{\partial{E}}{\partial{A^{l}}}\
 \left(
-\begin{cases}
-o^{l}_i \gt0 & a^{l-1}_i\\
-o^{l}_i \le0 & 0\
-\end{cases}\
+\gamma '(O^{l})a^{l-1}_{i}\
 \right)
 $
 
@@ -245,22 +237,58 @@ $
 ### Bias
 
 $
+\frac{\partial{O^{l}}}{\partial{B^{l}}}
+=\frac{\partial{\left(B^l+\sum{A^{l-1} W^l}\right)}}{\partial{B^l}}
+=1
+$
+
+$
 \frac{\partial{A^{l}}}{\partial{B^{l}}}
 =\
 \frac{\partial{A^{l}}}{\partial{O^{l}}}
 \frac{\partial{O^{l}}}{\partial{B^{l}}}
-=\begin{cases}
-o^{l}_i \gt0 & 1\\
-o^{l}_i \le0 & 0\
-\end{cases}\
-$, as differentiating over the bias will always be 1
+=\frac{\partial{A^{l}}}{\partial{O^{l}}}
+=\gamma ' (O^l)$
 
 $
 \frac{\partial{E^{l}}}{\partial{B^{l}}}
 =\
 \frac{\partial{E}}{\partial{A^{l}}}
 \frac{\partial{A^{l}}}{\partial{B^{l}}}
+=\frac{\partial{E}}{\partial{A^{l}}}
+\gamma ' (O^l)
+$
+ 
+### Summary
+
+$
+\frac{\partial{E}}{\partial{A^{l}}}
+=\
+\frac{\partial{E}}{\partial{A^{l+1}}}
+\frac{\partial{A^{l+1}}}{\partial{O^{l+1}}}
+\frac{\partial{O^{l+1}}}{\partial{A^{l}}}
+=\frac{\partial{E}}{\partial{A^{l+1}}}
+\gamma '(O^{l+1})\
+\sum^{N^{l+1}}_{i=0} W^{l+1}_i\
 $
 
+
+$
+\frac{\partial{E}}{\partial{w^{l}_{ij}}}
+=\
+\frac{\partial{E}}{\partial{A^{l}}}
+\frac{\partial{A^{l}}}{\partial{w^{l}_{ij}}}
+=\frac{\partial{E}}{\partial{A^{l}}}
+\gamma '(O^{l})a^{l-1}_{i}\
+$
+
+$
+\frac{\partial{E}}{\partial{b^{l}_{j}}}
+=\
+\frac{\partial{E}}{\partial{A^{l}}}
+\frac{\partial{A^{l}}}{\partial{b^{l}_{j}}}
+=\frac{\partial{E}}{\partial{A^{l}}}
+\gamma ' (O^l)
+$
 
 
