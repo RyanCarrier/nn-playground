@@ -160,7 +160,7 @@ pub trait BaseNetwork: Clone {
                 Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
             };
             //wait for 1s
-            std::thread::sleep(std::time::Duration::from_millis(10));
+            // std::thread::sleep(std::time::Duration::from_millis(10));
             println!("Learn Iteration {}, err:\t{}", i, test_all_result.error);
 
             // test_all_result = match self.test_all(&test_cases, error_fn) {

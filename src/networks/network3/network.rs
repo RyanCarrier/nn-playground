@@ -91,7 +91,7 @@ impl BaseNetwork for Network3 {
             Some(x) => x,
             None => |y: f64, t: f64| (y - t),
         };
-        let rate = 0.3;
+        let rate = 0.05;
 
         //cmon guys back propogation is simple 8), just copy it from chatgpt or smth
         let layers = self.layers.len();

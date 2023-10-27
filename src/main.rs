@@ -4,6 +4,7 @@ use nn_playground::{
         self,
         game::{play::play_game, tik_tak_toes::TikTakToes},
     },
+    graph::build_graph,
     networks::{network1::network::Network1, Networks},
     traits::{generic_game_case::GenericGameCase, network_traits::BaseNetwork},
 };
@@ -24,6 +25,7 @@ enum Runner {
     Game(GameArgs),
     PlayGame(GameArgs),
     Data(DataArgs),
+    Graph,
 }
 
 #[derive(Debug, Args)]
@@ -86,7 +88,7 @@ fn run_with(runner: Option<Runner>, network: &Option<Networks>) {
             None => DataSet::iter()
                 .for_each(|x| run_with(Some(Runner::Data(DataArgs { data: Some(x) })),network)),
         },
-        None => {
+            Some(Runner::Graph)=>{let _=build_graph(); }, None => {
             run_with(Some(Runner::Game(GameArgs { data: None })),network);
             run_with(Some(Runner::Data(DataArgs { data: None })),network);
         }
