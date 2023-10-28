@@ -79,86 +79,53 @@ impl BaseNetwork for Network3 {
         d_error_fn: Option<fn(f64, f64) -> f64>,
         d_activation_fn: fn(f64) -> f64,
     ) -> Result<BatchResult, String> {
-        // attempt 2 at back propogation
-        // main change is not consolidating all the gradients before applying
-        // so every round we apply gradients and hopefully we can follow better paths to success
-        // rather than following path to the lowest average error (per whole set, ie
-        // always spitting a result that will be 'mostly correct' all the time or something like
-        // that)
-        // this is cause if done all at once we we want half results to be 0.0 and half to be 1.0
-        // so consolidating made it so we want it to be 0.5 all the time... lol
         let d_error_fn = match d_error_fn {
             Some(x) => x,
             None => |y: f64, t: f64| (y - t),
         };
         let rate = 0.05;
-
-        //cmon guys back propogation is simple 8), just copy it from chatgpt or smth
-        let layers = self.layers.len();
-
-        for case in test_cases {
-            let input = case.get_input();
-            let (layer_outputs, layer_activations) = self.run_by_steps(&input);
-            let mut layer_gradients: Vec<Vec<f64>> = layer_activations
-                .iter()
-                .map(|x| vec![0.0; x.len()])
-                .collect();
-            //output layer gralayer_outputs,ds (dE/dA^L)
-            layer_gradients[layers - 1] = layer_activations[layers - 1]
+        for case in test_cases.iter() {
+            let (layer_outputs, layer_activations) = self.run_by_steps(&case.get_input());
+            let mut layer_gradient = layer_activations
+                .last()
+                .unwrap()
                 .iter()
                 .zip(case.output.iter())
                 .map(|(y, t)| d_error_fn(*y, *t))
-                .collect();
-            // println!("layer results: {:?}", layer_results);
-            // println!("last layer grads: {:?}", layer_result_gradients);
-            //figure out A^l gradients (dE/dA^l)
-            //move from back to front
-            for layer_index in (0..(layers - 1)).rev() {
-                for i in 0..layer_gradients[layer_index].len() {
-                    let mut temp_grad = 0.0;
-                    for j in 0..layer_gradients[layer_index + 1].len() {
-                        temp_grad += d_activation_fn(layer_outputs[layer_index + 1][j])
-                            * self.layers[layer_index + 1].weights[j][i]
-                            * layer_gradients[layer_index + 1][j]
-                    }
-                    layer_gradients[layer_index][i] = temp_grad;
-                }
-            }
-            //this was consolidation step, but now it will be application
-            for l in 0..layers {
-                let prev_layer_activations = if l == 0 {
-                    &input
+                .collect::<Vec<f64>>();
+            for l in (0..(self.layers.len())).rev() {
+                let next_layer_gradient = if l == 0 {
+                    vec![0.0; 0]
                 } else {
-                    &layer_activations[l - 1]
-                };
-                for j in 0..layer_activations[l].len() {
-                    self.layers[l].bias[j] -=
-                        rate * d_activation_fn(layer_outputs[l][j]) * layer_gradients[l][j];
-                    for i in 0..prev_layer_activations.len() {
-                        self.layers[l].weights[j][i] -= rate
-                            * d_activation_fn(layer_outputs[l][j])
-                            * layer_gradients[l][j]
-                            * prev_layer_activations[i];
+                    let mut temp_next_layer_grad: Vec<f64> = Vec::new();
+                    for i in 0..self.layers[l].weights[0].len() {
+                        let mut temp_grad = 0.0;
+                        for j in 0..self.layers[l].weights.len() {
+                            let da_do = d_activation_fn(layer_outputs[l][j]);
+                            temp_grad += da_do * self.layers[l].weights[j][i] * layer_gradient[j];
+                        }
+                        temp_next_layer_grad.push(temp_grad);
                     }
+                    temp_next_layer_grad
+                };
+
+                for j in 0..self.layers[l].weights.len() {
+                    let da_do = d_activation_fn(layer_outputs[l][j]);
+                    for i in 0..self.layers[l].weights[j].len() {
+                        let prev_activations = if l == 0 {
+                            case.get_input().clone()
+                        } else {
+                            layer_activations[l - 1].clone()
+                        };
+                        self.layers[l].weights[j][i] -=
+                            rate * da_do * prev_activations[i] * layer_gradient[j];
+                    }
+                    self.layers[l].bias[j] -= rate * da_do * layer_gradient[j];
                 }
+                //probs don't need to clone but idc rn
+                layer_gradient = next_layer_gradient.clone();
             }
-            // println!(
-            //     "input: {:?}, expected output:{:?}, got:{:?}",
-            //     input,
-            //     case.output,
-            //     layer_results[layers - 1]
-            // );
-            // println!("layer_results: {:?}", layer_results);
         }
-        // self.layers
-        //     .iter()
-        //     .for_each(|x| println!("Pre  Weights: {:?}", x.weights));
-        // self.layers
-        //     .iter()
-        //     .for_each(|x| println!("Post Weights: {:?}", x.weights));
-        // self.layers
-        //     .iter()
-        //     .for_each(|x| println!("Post Biases: {:?}", x.bias));
         self.test_all(test_cases, error_fn)
     }
 }
@@ -335,5 +302,96 @@ impl Network3 {
         //     .iter()
         //     .for_each(|x| println!("Post Biases: {:?}", x.bias));
         self.test_all(test_cases, Some(error_fn))
+    }
+    #[allow(dead_code, unused_variables)]
+    fn learn_from_testcases_second_attempt<I, O>(
+        &mut self,
+        test_cases: &Vec<GenericTestCase<I, O>>,
+        rate: f64,
+        error_fn: Option<fn(f64, f64) -> f64>,
+        d_error_fn: Option<fn(f64, f64) -> f64>,
+        d_activation_fn: fn(f64) -> f64,
+    ) -> Result<BatchResult, String> {
+        // attempt 2 at back propogation
+        // main change is not consolidating all the gradients before applying
+        // so every round we apply gradients and hopefully we can follow better paths to success
+        // rather than following path to the lowest average error (per whole set, ie
+        // always spitting a result that will be 'mostly correct' all the time or something like
+        // that)
+        // this is cause if done all at once we we want half results to be 0.0 and half to be 1.0
+        // so consolidating made it so we want it to be 0.5 all the time... lol
+        let d_error_fn = match d_error_fn {
+            Some(x) => x,
+            None => |y: f64, t: f64| (y - t),
+        };
+        let rate = 0.05;
+
+        //cmon guys back propogation is simple 8), just copy it from chatgpt or smth
+        let layers = self.layers.len();
+
+        for case in test_cases {
+            let input = case.get_input();
+            let (layer_outputs, layer_activations) = self.run_by_steps(&input);
+            let mut layer_gradients: Vec<Vec<f64>> = layer_activations
+                .iter()
+                .map(|x| vec![0.0; x.len()])
+                .collect();
+            //output layer gralayer_outputs,ds (dE/dA^L)
+            layer_gradients[layers - 1] = layer_activations[layers - 1]
+                .iter()
+                .zip(case.output.iter())
+                .map(|(y, t)| d_error_fn(*y, *t))
+                .collect();
+            // println!("layer results: {:?}", layer_results);
+            // println!("last layer grads: {:?}", layer_result_gradients);
+            //figure out A^l gradients (dE/dA^l)
+            //move from back to front
+            for layer_index in (0..(layers - 1)).rev() {
+                for i in 0..layer_gradients[layer_index].len() {
+                    let mut temp_grad = 0.0;
+                    for j in 0..layer_gradients[layer_index + 1].len() {
+                        temp_grad += d_activation_fn(layer_outputs[layer_index + 1][j])
+                            * self.layers[layer_index + 1].weights[j][i]
+                            * layer_gradients[layer_index + 1][j]
+                    }
+                    layer_gradients[layer_index][i] = temp_grad;
+                }
+            }
+            //this was consolidation step, but now it will be application
+            for l in 0..layers {
+                let prev_layer_activations = if l == 0 {
+                    &input
+                } else {
+                    &layer_activations[l - 1]
+                };
+                for j in 0..layer_activations[l].len() {
+                    self.layers[l].bias[j] -=
+                        rate * d_activation_fn(layer_outputs[l][j]) * layer_gradients[l][j];
+                    for i in 0..prev_layer_activations.len() {
+                        self.layers[l].weights[j][i] -= rate
+                            * d_activation_fn(layer_outputs[l][j])
+                            * layer_gradients[l][j]
+                            * prev_layer_activations[i];
+                    }
+                }
+            }
+            // println!(
+            //     "input: {:?}, expected output:{:?}, got:{:?}",
+            //     input,
+            //     case.output,
+            //     layer_results[layers - 1]
+            // );
+            // println!("layer_results: {:?}", layer_results);
+        }
+        // self.layers
+        //     .iter()
+        //     .for_each(|x| println!("Pre  Weights: {:?}", x.weights));
+        // self.layers
+        //     .iter()
+        //     .for_each(|x| println!("Post Weights: {:?}", x.weights));
+        // self.layers
+        //     .iter()
+        //     .for_each(|x| println!("Post Biases: {:?}", x.bias));
+        self.test_all(test_cases, error_fn)
     }
 }
