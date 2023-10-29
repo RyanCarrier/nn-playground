@@ -83,7 +83,7 @@ impl BaseNetwork for Network3 {
             Some(x) => x,
             None => |y: f64, t: f64| (y - t),
         };
-        let rate = 0.05;
+        let rate = 0.2;
         for case in test_cases.iter() {
             let (layer_outputs, layer_activations) = self.run_by_steps(&case.get_input());
             let mut layer_gradient = layer_activations
@@ -117,8 +117,15 @@ impl BaseNetwork for Network3 {
                         } else {
                             layer_activations[l - 1].clone()
                         };
+                        // let prev_outputs = if l == 0 {
+                        //     case.get_input().clone()
+                        // } else {
+                        //     layer_outputs[l - 1].clone()
+                        // };
                         self.layers[l].weights[j][i] -=
-                            rate * da_do * prev_activations[i] * layer_gradient[j];
+                            // rate * prev_activations[i] * layer_gradient[j];
+                        rate * da_do * prev_activations[i] * layer_gradient[j];
+                        // rate * da_do * prev_outputs[i] * layer_gradient[j];
                     }
                     self.layers[l].bias[j] -= rate * da_do * layer_gradient[j];
                 }

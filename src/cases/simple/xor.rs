@@ -5,7 +5,7 @@ use crate::{networks::Networks, run, traits::generic_test_case::GenericTestCase}
 pub fn runner(network: &Option<Networks>) {
     let test_cases = TestCaseXor::get_all_generic();
     let layers = 3..5;
-    let nodes = 3..4;
+    let nodes = 4..5;
     match network {
         Some(Networks::Network1) => run::run("Xor", Networks::Network1, &test_cases, layers, nodes),
         Some(Networks::Network2) => run::run("Xor", Networks::Network2, &test_cases, layers, nodes),
@@ -63,7 +63,7 @@ impl TestCaseXor {
         output
             .iter()
             .zip(expected_output.iter())
-            .map(|(x, y)| (x - y).powi(2))
+            .map(|(x, y)| (x - y).powi(2) / 2.0)
             .collect()
     }
     pub fn display(&self) -> String {
