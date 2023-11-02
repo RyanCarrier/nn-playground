@@ -142,7 +142,7 @@ pub trait BaseNetwork: Clone {
         };
         let min_error = match min_error {
             Some(x) => x,
-            None => 0.0,
+            None => 0.001,
         };
 
         let mut i = 0;
@@ -160,8 +160,14 @@ pub trait BaseNetwork: Clone {
                 Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
             };
             //wait for 1s
-            // std::thread::sleep(std::time::Duration::from_millis(10));
-            println!("Learn Iteration {}, err:\t{}", i, test_all_result.error);
+            // if i % 1000 == 0 {
+            // println!(
+            //     "Learn Iteration {}, err:\t{}\trate:\t{}",
+            //     i, test_all_result.error, rate
+            // );
+            // println!("Learn Iteration {}, err:\t{}\t", i, test_all_result.error);
+            // std::thread::sleep(std::time::Duration::from_millis(100));
+            // }
 
             // test_all_result = match self.test_all(&test_cases, error_fn) {
             //     Ok(r) => r,
@@ -176,7 +182,7 @@ pub trait BaseNetwork: Clone {
             // else {
             //     self.revert();
             // }
-            if i - last_rate_change > 5 {
+            if i - last_rate_change > 100 {
                 rate *= 1.05;
                 // println!("=====heating up, rate increasing to {:.3}", rate);
                 last_rate_change = i;

@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::{f64::MAX, ops::Range};
 
 use crate::{
     networks::{
@@ -46,8 +46,6 @@ pub fn run<I, O>(
                 ),
             }
         }
-
-        println!("------");
     }
 }
 
@@ -59,45 +57,51 @@ pub fn run_network<I, O>(
     d_activation_fn: fn(f64) -> f64,
 ) {
     print!(
-        "internal layers:\t{},\tinternal nodes:\t{}",
+        "internal layers:\t{},\tinternal nodes:\t{}\t",
         network.internel_layers(),
         network.internal_nodes(),
     );
-    let rounds = 10;
-    let mut total_iterations = 0;
-    for _ in 0..rounds {
-        let mut network = network.clone();
-        let learn_errors: Vec<f64> = match network.learn(
-            &test_cases,
-            Some(100_000),
-            None,
-            error_fn,
-            d_error_fn,
-            d_activation_fn,
-        ) {
-            Ok(l) => l,
-            Err(e) => panic!("{}", e),
-        };
-        match verify(network, test_cases) {
-            Ok(_) => (),
-            Err(e) => {
-                println!("\t\t{}", e);
-                return;
-            }
+    // thread::sleep(Duration::from_secs(3));
+    let mut network = network.clone();
+    let learn_errors: Vec<f64> = match network.learn(
+        &test_cases,
+        Some(100_000),
+        None,
+        error_fn,
+        d_error_fn,
+        d_activation_fn,
+    ) {
+        Ok(l) => l,
+        // Err(e) => panic!("{}", e),
+        Err(e) => {
+            println!("{:?}", e);
+            vec![MAX; 1]
         }
-        total_iterations += learn_errors.len();
+    };
+    match verify(network, test_cases) {
+        Ok(_) => {
+            print!("Ok!",);
+        }
+        Err(_) => {
+            print!("failed",);
+        }
     }
-    println!("\t\tOk! (avg iterations: {})", total_iterations / rounds);
+    println!(
+        "\titerations: {}\terror:{}",
+        learn_errors.len(),
+        learn_errors.last().unwrap()
+    );
 }
 pub fn verify<I, O>(
     mut network: impl BaseNetwork,
     test_cases: &Vec<GenericTestCase<I, O>>,
 ) -> Result<(), String> {
+    //ok i don't really care about this output anymore
     let result = match network.test_all(test_cases, None) {
         Ok(r) => r,
         Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
     };
-    if result.error != 0.0 {
+    if result.error > 0.001 {
         return Err(format!("error: {}", result.error));
     }
     Ok(())

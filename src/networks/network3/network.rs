@@ -83,7 +83,7 @@ impl BaseNetwork for Network3 {
             Some(x) => x,
             None => |y: f64, t: f64| (y - t),
         };
-        let rate = 0.2;
+        let rate = 0.25;
         for case in test_cases.iter() {
             let (layer_outputs, layer_activations) = self.run_by_steps(&case.get_input());
             let mut layer_gradient = layer_activations
@@ -94,15 +94,21 @@ impl BaseNetwork for Network3 {
                 .map(|(y, t)| d_error_fn(*y, *t))
                 .collect::<Vec<f64>>();
             for l in (0..(self.layers.len())).rev() {
+                //get the next layer gradient ready before we adjust any weights
+                //this is the dE/dA^l
                 let next_layer_gradient = if l == 0 {
                     vec![0.0; 0]
                 } else {
                     let mut temp_next_layer_grad: Vec<f64> = Vec::new();
+                    let da_do_weights: Vec<f64> = layer_gradient
+                        .iter()
+                        .enumerate()
+                        .map(|(j, gradient)| gradient * d_activation_fn(layer_outputs[l][j]))
+                        .collect();
                     for i in 0..self.layers[l].weights[0].len() {
                         let mut temp_grad = 0.0;
                         for j in 0..self.layers[l].weights.len() {
-                            let da_do = d_activation_fn(layer_outputs[l][j]);
-                            temp_grad += da_do * self.layers[l].weights[j][i] * layer_gradient[j];
+                            temp_grad += self.layers[l].weights[j][i] * da_do_weights[j];
                         }
                         temp_next_layer_grad.push(temp_grad);
                     }
@@ -117,11 +123,6 @@ impl BaseNetwork for Network3 {
                         } else {
                             layer_activations[l - 1].clone()
                         };
-                        // let prev_outputs = if l == 0 {
-                        //     case.get_input().clone()
-                        // } else {
-                        //     layer_outputs[l - 1].clone()
-                        // };
                         self.layers[l].weights[j][i] -=
                             // rate * prev_activations[i] * layer_gradient[j];
                         rate * da_do * prev_activations[i] * layer_gradient[j];
@@ -160,8 +161,8 @@ impl Network3 {
         layer_outputs[0] = self.layers[0].run_total(initial_inputs.clone());
         layer_activations[0] = self.layers[0].run_activate(layer_outputs[0].clone());
         for i in 1..self.layers.len() {
-            layer_outputs[i] = self.layers[i].run(layer_activations[i - 1].clone());
-            layer_activations[i] = self.layers[i].run(layer_outputs[i].clone());
+            layer_outputs[i] = self.layers[i].run_total(layer_activations[i - 1].clone());
+            layer_activations[i] = self.layers[i].run_activate(layer_outputs[i].clone());
         }
         (layer_outputs, layer_activations)
     }
@@ -382,23 +383,7 @@ impl Network3 {
                     }
                 }
             }
-            // println!(
-            //     "input: {:?}, expected output:{:?}, got:{:?}",
-            //     input,
-            //     case.output,
-            //     layer_results[layers - 1]
-            // );
-            // println!("layer_results: {:?}", layer_results);
         }
-        // self.layers
-        //     .iter()
-        //     .for_each(|x| println!("Pre  Weights: {:?}", x.weights));
-        // self.layers
-        //     .iter()
-        //     .for_each(|x| println!("Post Weights: {:?}", x.weights));
-        // self.layers
-        //     .iter()
-        //     .for_each(|x| println!("Post Biases: {:?}", x.bias));
         self.test_all(test_cases, error_fn)
     }
 }

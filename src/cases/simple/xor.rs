@@ -4,8 +4,8 @@ use crate::{networks::Networks, run, traits::generic_test_case::GenericTestCase}
 
 pub fn runner(network: &Option<Networks>) {
     let test_cases = TestCaseXor::get_all_generic();
-    let layers = 3..5;
-    let nodes = 4..5;
+    let layers = 1..3;
+    let nodes = 2..11;
     match network {
         Some(Networks::Network1) => run::run("Xor", Networks::Network1, &test_cases, layers, nodes),
         Some(Networks::Network2) => run::run("Xor", Networks::Network2, &test_cases, layers, nodes),
