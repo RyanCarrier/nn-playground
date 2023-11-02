@@ -148,7 +148,7 @@ $\frac{\partial{O^{l+1}}}{\partial{A^{l}}}=\sum^{N^{l+1}}_{i=0}W^{l+1}_i$
 We will need activation gradient for next layer anyway;
  
 ```math
-\frac{\partial{E}}{\partial{A^{l}}}\=\frac{\partial{E}}{\partial{A^{l+1}}}\gamma'(O^{l+1})\sum^{N^{l+1}}_{i=0}W^{l+1}_i\
+\frac{\partial{E}}{\partial{A^{l}}}\=\frac{\partial{E}}{\partial{A^{l+1}}}\gamma'(O^{l+1})\sum^{N^{l+1}}_{i=0}W^{l+1}_i
 ```
  
 ```math
