@@ -86,8 +86,7 @@ $\frac{\partial{E}}{\partial{y}}=y-t$
 $y(x)=A^L=\gamma (O^L)$
 
 
-$
-\frac{\partial{y}}{\partial{O^L}}=\frac{\partial{A^L}}{\partial{O^L}}=\gamma '(O^L)=\gamma{(O^L)}(1-\gamma (O^L))$
+$\frac{\partial{y}}{\partial{O^L}}=\frac{\partial{A^L}}{\partial{O^L}}=\gamma{'(O^L)}=\gamma{(O^L)}(1-\gamma{(O^L)})$
 , the derivative of the sigmoid fn
 
 <hr>
