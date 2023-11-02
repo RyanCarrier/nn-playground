@@ -110,28 +110,24 @@ $\frac{\partial{E}}{\partial{w^L_{ij}}} = \frac{\partial{E}}{\partial{y}} \frac{
 ### TESTING
 
 ```math
-\frac{\partial{E}}{\partial{w^{L-1}_{ij}}} \frac{\partial{E}}{\partial{A^{L-1}}} \frac{\partial{A^{L-1}}}{\partial{w^{L-1}_{ij}}}
+$\frac{\partial{E}}{\partial{w^{L-1}_{ij}}}=\frac{\partial{E}}{\partial{A^{L-1}}}\frac{\partial{A^{L-1}}}{\partial{w^{L-1}_{ij}}}=\left(\frac{\partial{E}}{\partial{A^{L}}}\frac{\partial{A^L}}{\partial{O^L}}\frac{\partial{O^L}}{\partial{A^{L-1}}}\right)\left(\frac{\partial{A^{L-1}}}{\partial{O^{L-1}}}\frac{\partial{O^{L-1}}}{\partial{w^{L-1}_{ij}}}\right)$
 ```
-
-$\left(\frac{\partial{E}}{\partial{A^{L}}}\frac{\partial{A^L}}{\partial{O^L}}\frac{\partial{O^L}}{\partial{A^{L-1}}}\right)\left(\frac{\partial{A^{L-1}}}{\partial{O^{L-1}}}\frac{\partial{O^{L-1}}}{\partial{w^{L-1}_{ij}}}\right)$
-
-$\frac{\partial{E}}{\partial{w^{L-1}_{ij}}}=\frac{\partial{E}}{\partial{A^{L-1}}}\frac{\partial{A^{L-1}}}{\partial{w^{L-1}_{ij}}}=\left(\frac{\partial{E}}{\partial{A^{L}}}\frac{\partial{A^L}}{\partial{O^L}}\frac{\partial{O^L}}{\partial{A^{L-1}}}\right)\left(\frac{\partial{A^{L-1}}}{\partial{O^{L-1}}}\frac{\partial{O^{L-1}}}{\partial{w^{L-1}_{ij}}}\right)$
-
-### NOT TESTING
-
-$\frac{\partial{E}}{\partial{w^{L-1}_{ij}}}=\frac{\partial{E}}{\partial{A^{L-1}}}\frac{\partial{A^{L-1}}}{\partial{w^{L-1}_{ij}}}=\left(\frac{\partial{E}}{\partial{A^{L}}}\frac{\partial{A^L}}{\partial{O^L}}\frac{\partial{O^L}}{\partial{A^{L-1}}}\right)\left(\frac{\partial{A^{L-1}}}{\partial{O^{L-1}}}\frac{\partial{O^{L-1}}}{\partial{w^{L-1}_{ij}}}\right)$
 
 
 For the next layer...
 
-$\frac{\partial{E}}{\partial{w^{L-2}_{ij}}}=\frac{\partial{E}}{\partial{A^{L-2}}}\frac{\partial{A^{L-2}}}{\partial{w^{L-2}_{ij}}}=\left(\frac{\partial{E}}{\partial{A^{L-1}}}\frac{\partial{A^{L-1}}}{\partial{O^{L-1}}}\frac{\partial{O^{L-1}}}{\partial{A^{L-2}}}\right)\left(\frac{\partial{A^{L-2}}}{\partial{O^{L-2}}}\frac{\partial{O^{L-2}}}{\partial{w^{L-2}_{ij}}}\right)$
+```math
+\frac{\partial{E}}{\partial{w^{L-2}_{ij}}}=\frac{\partial{E}}{\partial{A^{L-2}}}\frac{\partial{A^{L-2}}}{\partial{w^{L-2}_{ij}}}=\left(\frac{\partial{E}}{\partial{A^{L-1}}}\frac{\partial{A^{L-1}}}{\partial{O^{L-1}}}\frac{\partial{O^{L-1}}}{\partial{A^{L-2}}}\right)\left(\frac{\partial{A^{L-2}}}{\partial{O^{L-2}}}\frac{\partial{O^{L-2}}}{\partial{w^{L-2}_{ij}}}\right)
+```
 
 Note we can use some terms from the previous step...
 
 So more generically;
 
 
-$\frac{\partial{E}}{\partial{w^{l}_{ij}}}=\frac{\partial{E}}{\partial{A^{l}}}\frac{\partial{A^{l}}}{\partial{w^{l}_{ij}}}=\left(\frac{\partial{E}}{\partial{A^{l+1}}}\frac{\partial{A^{l+1}}}{\partial{O^{l+1}}}\frac{\partial{O^{l+1}}}{\partial{A^{l}}}\right)\left(\frac{\partial{A^{l}}}{\partial{O^{l}}}\frac{\partial{O^{l}}}{\partial{w^{l}_{ij}}}\right)$
+```math
+\frac{\partial{E}}{\partial{w^{l}_{ij}}}=\frac{\partial{E}}{\partial{A^{l}}}\frac{\partial{A^{l}}}{\partial{w^{l}_{ij}}}=\left(\frac{\partial{E}}{\partial{A^{l+1}}}\frac{\partial{A^{l+1}}}{\partial{O^{l+1}}}\frac{\partial{O^{l+1}}}{\partial{A^{l}}}\right)\left(\frac{\partial{A^{l}}}{\partial{O^{l}}}\frac{\partial{O^{l}}}{\partial{w^{l}_{ij}}}\right)
+```
 
 <hr>
 
@@ -142,13 +138,17 @@ $\frac{\partial{A^{l+1}}}{\partial{O^{l+1}}}=\gamma'(O^{l+1})\$
 
 $\frac{\partial{O^{l+1}}}{\partial{A^{l}}}=\sum^{N^{l+1}}_{i=0}W^{l+1}_i$
 
+```math
 $\frac{\partial{A^{l}}}{\partial{w^{l}_{ij}}}=\frac{\partial{A^{l}}}{\partial{O^{l}}}\frac{\partial{O^{l}}}{\partial{w^{l}_{ij}}}=\gamma'(o^{l}_j)a^{l-1}_{i}\$
+```
 
 We will need activation gradient for next layer anyway;
 
 $\frac{\partial{E}}{\partial{A^{l}}}\=\frac{\partial{E}}{\partial{A^{l+1}}}\gamma'(O^{l+1})\sum^{N^{l+1}}_{i=0}W^{l+1}_i\$
-
-$\frac{\partial{E}}{\partial{w^{l}_{ij}}}=\frac{\partial{E}}{\partial{A^{l}}}\frac{\partial{A^{l}}}{\partial{w^{l}_{ij}}}=\frac{\partial{E}}{\partial{A^{l}}}\left(\gamma'(O^{l})a^{l-1}_{i}\right)$
+ 
+```math
+\frac{\partial{E}}{\partial{w^{l}_{ij}}}=\frac{\partial{E}}{\partial{A^{l}}}\frac{\partial{A^{l}}}{\partial{w^{l}_{ij}}}=\frac{\partial{E}}{\partial{A^{l}}}\left(\gamma'(O^{l})a^{l-1}_{i}\right)
+```
 
 
 ### Bias
@@ -159,13 +159,17 @@ $\frac{\partial{A^{l}}}{\partial{B^{l}}}=\frac{\partial{A^{l}}}{\partial{O^{l}}}
 
 $\frac{\partial{E^{l}}}{\partial{B^{l}}}=\frac{\partial{E}}{\partial{A^{l}}}\frac{\partial{A^{l}}}{\partial{B^{l}}}=\frac{\partial{E}}{\partial{A^{l}}}\gamma'(O^l)$
 
-###Summary
+### Summary
 
 $\frac{\partial{E}}{\partial{A^{l}}}=\frac{\partial{E}}{\partial{A^{l+1}}}\frac{\partial{A^{l+1}}}{\partial{O^{l+1}}}\frac{\partial{O^{l+1}}}{\partial{A^{l}}}=\frac{\partial{E}}{\partial{A^{l+1}}}\gamma'(O^{l+1})\sum^{N^{l+1}}_{i=0}W^{l+1}_i\$
 
-
-$\frac{\partial{E}}{\partial{w^{l}_{ij}}}=\frac{\partial{E}}{\partial{A^{l}}}\frac{\partial{A^{l}}}{\partial{w^{l}_{ij}}}=\frac{\partial{E}}{\partial{A^{l}}}\gamma'(O^{l})a^{l-1}_{i}\$
-
-$\frac{\partial{E}}{\partial{b^{l}_{j}}}=\frac{\partial{E}}{\partial{A^{l}}}\frac{\partial{A^{l}}}{\partial{b^{l}_{j}}}=\frac{\partial{E}}{\partial{A^{l}}}\gamma'(O^l)$
+ 
+```math
+\frac{\partial{E}}{\partial{w^{l}_{ij}}}=\frac{\partial{E}}{\partial{A^{l}}}\frac{\partial{A^{l}}}{\partial{w^{l}_{ij}}}=\frac{\partial{E}}{\partial{A^{l}}}\gamma'(O^{l})a^{l-1}_{i}\
+```
+ 
+```math
+\frac{\partial{E}}{\partial{b^{l}_{j}}}=\frac{\partial{E}}{\partial{A^{l}}}\frac{\partial{A^{l}}}{\partial{b^{l}_{j}}}=\frac{\partial{E}}{\partial{A^{l}}}\gamma'(O^l)
+```
 
 
