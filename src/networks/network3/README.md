@@ -73,10 +73,6 @@ $
 \frac{\partial{y}}{\partial{O^L}}
 \frac{\partial{O^L}}{\partial{w^L_{ij}}}
 =\
-\frac{\partial{E}}{\cancel{\partial{y}}}
-\frac{\cancel{\partial{y}}}{\cancel{\partial{O^L}}}
-\frac{\cancel{\partial{O^L}}}{\partial{w^L_{ij}}}
-=\
 \frac{\partial{E}}{\partial{w^L_{ij}}}
 $
 
