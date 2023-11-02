@@ -73,8 +73,7 @@ $\frac{\partial{E}}{\partial{y}}\frac{\partial{y}}{\partial{O^L}}\frac{\partial{
 And note that $y\equiv A^L$
 
 We can represent all 
-$
-\frac{\partial{E}}{\partial{y}},\frac{\partial{y}}{\partial{o^L_{ij}}}$ and $
+$\frac{\partial{E}}{\partial{y}},\frac{\partial{y}}{\partial{o^L_{ij}}}$ and $
 \frac{\partial{o^L_{ij}}}{\partial{w^l_{ij}}}$ individually.
 
 <hr>
