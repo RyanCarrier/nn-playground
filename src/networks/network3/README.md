@@ -103,13 +103,13 @@ $\frac{\partial{O^L}}{\partial{w^L_{ij}}}={a_i^{L-1}}$
 
 <hr>
 
-$`\frac{\partial{E}}{\partial{w^L_{ij}}}=\frac{\partial{E}}{\partial{y}}\frac{\partial{y}}{\partial{O^L}}\frac{\partial{O^L}}{\partial{w^L_{ij}}}=\gamma'(o^l_j)(y_j-t_j)a_i^{L-1}\`$
+$\frac{\partial{E}}{\partial{w^L_{ij}}} = \frac{\partial{E}}{\partial{y}} \frac{\partial{y}}{\partial{O^L}} \frac{\partial{O^L}}{\partial{w^L_{ij}}} = \gamma{'(o^l_j)}(y_j-t_j)a_i^{L-1}\$
 
 #### Intermediate layers
 
 ### TESTING
 
-$\frac{\partial{E}}{\partial{w^{L-1}_{ij}}} \frac{\partial{E}}{\partial{A^{L-1}}} \frac{\partial{A^{L-1}}}{\partial{w^{L-1}_{ij}}}$
+$$\frac{\partial{E}}{\partial{w^{L-1}_{ij}}} \frac{\partial{E}}{\partial{A^{L-1}}} \frac{\partial{A^{L-1}}}{\partial{w^{L-1}_{ij}}}$$
 
 $\left(\frac{\partial{E}}{\partial{A^{L}}}\frac{\partial{A^L}}{\partial{O^L}}\frac{\partial{O^L}}{\partial{A^{L-1}}}\right)\left(\frac{\partial{A^{L-1}}}{\partial{O^{L-1}}}\frac{\partial{O^{L-1}}}{\partial{w^{L-1}_{ij}}}\right)$
 
