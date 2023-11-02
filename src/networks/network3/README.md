@@ -68,7 +68,7 @@ Starting with the final (output layer)
 
 #### Output layer
 
-$ \frac{\partial{E}}{\partial{y}} \frac{\partial{y}}{\partial{O^L}} \frac{\partial{O^L}}{\partial{w^L_{ij}}} =\ \frac{\partial{E}}{\partial{w^L_{ij}}} $
+$\frac{\partial{E}}{\partial{y}}\frac{\partial{y}}{\partial{O^L}}\frac{\partial{O^L}}{\partial{w^L_{ij}}}=\frac{\partial{E}}{\partial{w^L_{ij}}}$
 
 And note that $y\equiv A^L$
 
