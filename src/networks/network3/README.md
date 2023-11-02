@@ -93,11 +93,11 @@ $\frac{\partial{y}}{\partial{O^L}}=\frac{\partial{A^L}}{\partial{O^L}}=\gamma{'(
 
 $O^L=B^L+\sum{A^{L-1}W^L}$
 
-$O^L=(o^L_m)=(b^L_m+\sum_{k=0}^{N^L}{a^{L-1}_k w^L_{km}})$
+$O^L=(o^L_m)=(b^L_m+\sum_{k=0}^{N^L}{a^{L-1}_kw^L_{km}})$
 
 The only piece of the set which would not derive to 0, would be the term with $m=j$, so;
 
-$O^L\equiv o^L_j=b^L_j+\sum_{k=0}^{N^L}{a^{L-1}_k w^L_{kj}}$
+$O^L\equiv o^L_j=b^L_j+\sum_{k=0}^{N^L}{a^{L-1}_kw^L_{kj}}$
 
 $\frac{\partial{O^L}}{\partial{w^L_{ij}}}={a_i^{L-1}}$
 
@@ -106,6 +106,17 @@ $\frac{\partial{O^L}}{\partial{w^L_{ij}}}={a_i^{L-1}}$
 $\frac{\partial{E}}{\partial{w^L_{ij}}}=\frac{\partial{E}}{\partial{y}}\frac{\partial{y}}{\partial{O^L}}\frac{\partial{O^L}}{\partial{w^L_{ij}}}=\gamma'(o^l_j)(y_j-t_j)a_i^{L-1}\$
 
 #### Intermediate layers
+
+### TESTING
+$\frac{\partial{E}}{\partial{w^{L-1}_{ij}}}$
+
+$frac{\partial{E}}{\partial{A^{L-1}}}\frac{\partial{A^{L-1}}}{\partial{w^{L-1}_{ij}}}$
+
+$left(\frac{\partial{E}}{\partial{A^{L}}}\frac{\partial{A^L}}{\partial{O^L}}\frac{\partial{O^L}}{\partial{A^{L-1}}}\right)\left(\frac{\partial{A^{L-1}}}{\partial{O^{L-1}}}\frac{\partial{O^{L-1}}}{\partial{w^{L-1}_{ij}}}\right)$
+
+$\frac{\partial{E}}{\partial{w^{L-1}_{ij}}}=\frac{\partial{E}}{\partial{A^{L-1}}}\frac{\partial{A^{L-1}}}{\partial{w^{L-1}_{ij}}}=\left(\frac{\partial{E}}{\partial{A^{L}}}\frac{\partial{A^L}}{\partial{O^L}}\frac{\partial{O^L}}{\partial{A^{L-1}}}\right)\left(\frac{\partial{A^{L-1}}}{\partial{O^{L-1}}}\frac{\partial{O^{L-1}}}{\partial{w^{L-1}_{ij}}}\right)$
+
+### NOT TESTING
 
 $\frac{\partial{E}}{\partial{w^{L-1}_{ij}}}=\frac{\partial{E}}{\partial{A^{L-1}}}\frac{\partial{A^{L-1}}}{\partial{w^{L-1}_{ij}}}=\left(\frac{\partial{E}}{\partial{A^{L}}}\frac{\partial{A^L}}{\partial{O^L}}\frac{\partial{O^L}}{\partial{A^{L-1}}}\right)\left(\frac{\partial{A^{L-1}}}{\partial{O^{L-1}}}\frac{\partial{O^{L-1}}}{\partial{w^{L-1}_{ij}}}\right)$
 
