@@ -65,9 +65,15 @@ fn or_and_internal(c: &mut Criterion, nodes_layers: usize) {
     });
     //network3
     group.bench_function(BenchmarkId::new("Network3", nodes_title), |b| {
-        let network3 = Network3::new(3, 1, nodes_layers, nodes_layers, |x| x.max(0.0));
+        let network3 = Network3::new(3, 1, nodes_layers, nodes_layers, Network3::activation_fn);
         // ensure_correct(&mut network3.clone(), &test_cases);
-        b.iter(|| learn_cases(black_box(&mut network3.clone()), black_box(&test_cases), da))
+        b.iter(|| {
+            learn_cases(
+                black_box(&mut network3.clone()),
+                black_box(&test_cases),
+                Network3::d_activation_fn,
+            )
+        })
     });
 }
 
