@@ -1,4 +1,6 @@
-use rand::random;
+use rand::{thread_rng, Rng};
+
+use crate::networks::activation_functions::ActivationFunction;
 
 #[derive(Clone)]
 pub struct Layer {
@@ -11,20 +13,21 @@ pub struct Layer {
     // pub nodes: [[f64;input_size];output_size]],
     pub bias: Vec<f64>,
     old_bias: Vec<f64>,
-    output_fn: fn(f64) -> f64,
+    activation_fn: ActivationFunction,
 }
 impl Layer {
-    pub fn new(input_size: usize, output_size: usize, output_fn: fn(f64) -> f64) -> Layer {
+    pub fn new(input_size: usize, output_size: usize, activation_fn: ActivationFunction) -> Layer {
         Layer {
             weights: vec![vec![0.0; input_size]; output_size],
             old_weights: vec![vec![0.0; input_size]; output_size],
             bias: vec![0.0; output_size],
             old_bias: vec![0.0; output_size],
-            output_fn,
+            activation_fn,
         }
     }
     pub fn rand_weights(&mut self, rate: f64) {
-        let rand_rate = || (random::<f64>() - 0.5) * rate;
+        let mut rng = thread_rng();
+        let mut rand_rate = || rate * rng.gen_range(-1.0..1.0);
         self.old_weights = self.weights.clone();
         self.weights
             .iter_mut()
@@ -42,7 +45,7 @@ impl Layer {
                     .fold(0.0, |p, (x, y)| p + x * y)
             })
             .zip(self.bias.iter())
-            .map(|(x, y)| (self.output_fn)(x + y))
+            .map(|(x, y)| self.activation_fn.forward(x + y))
             .collect()
     }
 

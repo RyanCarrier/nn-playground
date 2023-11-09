@@ -7,15 +7,33 @@ pub fn runner(network: &Option<Networks>) {
     let layers = 2..5;
     let nodes = 4..7;
     match network {
-        Some(Networks::Network1) => {
-            run::run("OrAnd", Networks::Network1, &test_cases, layers, nodes)
-        }
-        Some(Networks::Network2) => {
-            run::run("OrAnd", Networks::Network2, &test_cases, layers, nodes)
-        }
-        Some(Networks::Network3) => {
-            run::run("OrAnd", Networks::Network3, &test_cases, layers, nodes)
-        }
+        Some(Networks::Network1) => run::run(
+            "OrAnd",
+            Networks::Network1,
+            &test_cases,
+            layers,
+            nodes,
+            None,
+            None,
+        ),
+        Some(Networks::Network2) => run::run(
+            "OrAnd",
+            Networks::Network2,
+            &test_cases,
+            layers,
+            nodes,
+            None,
+            None,
+        ),
+        Some(Networks::Network3) => run::run(
+            "OrAnd",
+            Networks::Network3,
+            &test_cases,
+            layers,
+            nodes,
+            None,
+            None,
+        ),
         None => {
             Networks::iter().for_each(|network| {
                 runner(&Some(network));
@@ -28,16 +46,33 @@ pub fn runner(network: &Option<Networks>) {
 mod tests {
 
     use crate::{
-        networks::{network1::network::Network1, network2::network::Network2},
+        networks::{
+            activation_functions::ActivationFunction, network1::network::Network1,
+            network2::network::Network2,
+        },
         traits::network_traits::BaseNetwork,
     };
 
     use super::TestCaseOrAnd;
     fn get_network1() -> Network1 {
-        Network1::new(3, 1, 4, 1, |x| x.max(0.0))
+        Network1::new(
+            3,
+            1,
+            4,
+            1,
+            ActivationFunction::Relu,
+            ActivationFunction::Relu,
+        )
     }
     fn get_network2() -> Network2 {
-        Network2::new(3, 1, 4, 1, |x| x.max(0.0))
+        Network2::new(
+            3,
+            1,
+            4,
+            1,
+            ActivationFunction::Relu,
+            ActivationFunction::Relu,
+        )
     }
 
     #[test]
@@ -45,13 +80,13 @@ mod tests {
         let test_cases = TestCaseOrAnd::get_all_generic();
         for _ in 0..20 {
             let mut network = get_network1();
-            match network.learn(&test_cases, Some(100_000), None, None, None, |_| 1.0) {
+            match network.learn(&test_cases, Some(100_000), None, None, None) {
                 Ok(err_history) => println!("err_history length: {}", err_history.len()),
                 Err(e) => panic!("{}", e),
             }
             test(network);
             let mut network = get_network2();
-            match network.learn(&test_cases, Some(100_000), None, None, None, |_| 1.0) {
+            match network.learn(&test_cases, Some(100_000), None, None, None) {
                 Ok(err_history) => println!("err_history length: {}", err_history.len()),
                 Err(e) => panic!("{}", e),
             }

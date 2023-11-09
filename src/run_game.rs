@@ -1,5 +1,6 @@
 use std::{fmt::Debug, ops::Range};
 
+use crate::networks::activation_functions::ActivationFunction;
 use crate::traits::network_traits::BaseNetwork;
 use crate::{networks::network1::network::Network1, traits::generic_game_case::GenericGameCase};
 
@@ -16,7 +17,14 @@ pub fn run_game<I: Copy + Debug + ToString>(
         for node in nodes.clone() {
             run_game_network(
                 // Network1::new(inputs, outputs, node, layer, Some(|x| x.round())),
-                Network1::new(inputs, outputs, node, layer, |x| x.max(0.0)),
+                Network1::new(
+                    inputs,
+                    outputs,
+                    node,
+                    layer,
+                    ActivationFunction::Relu,
+                    ActivationFunction::Relu,
+                ),
                 game,
             );
         }

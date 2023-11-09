@@ -1,3 +1,4 @@
+use crate::networks::activation_functions::ActivationFunction;
 use std::{fmt::Debug, usize::MAX};
 
 use super::{
@@ -11,8 +12,11 @@ pub trait BaseNetwork: Clone {
         output_nodes: usize,
         internal_nodes: usize,
         internal_layers: usize,
-        activation_fn: fn(f64) -> f64,
+        activation_fn: ActivationFunction,
+        final_layer_activation_fn: ActivationFunction,
     ) -> Self;
+    fn activation_fn(&self) -> &ActivationFunction;
+    fn final_layer_activation_fn(&self) -> &ActivationFunction;
     fn title(&self) -> String;
     fn internel_layers(&self) -> usize;
     fn internal_nodes(&self) -> usize;
@@ -24,7 +28,6 @@ pub trait BaseNetwork: Clone {
         rate: f64,
         error_fn: Option<fn(f64, f64) -> f64>,
         d_error_fn: Option<fn(f64, f64) -> f64>,
-        d_activation_fn: fn(f64) -> f64,
     ) -> Result<BatchResult, String>;
 
     //result is the value compared to previous success rate, 1.0 would be same as previous
@@ -38,6 +41,16 @@ pub trait BaseNetwork: Clone {
         error_fn: Option<fn(f64, f64) -> f64>,
     ) -> Result<TestResult, String> {
         let result = self.run(test_case.get_input());
+        println!(
+            "{}: {:?}, INPUT:{:?}",
+            "test INFO",
+            result,
+            test_case.get_input()
+        );
+        if test_case.get_input()[0].is_nan() {
+            println!("{}: {:?}", "test NAN", test_case.get_input());
+            panic!("PANIC IS NAN ");
+        }
         let errors = result
             .iter()
             .zip(test_case.output.iter())
@@ -79,7 +92,13 @@ pub trait BaseNetwork: Clone {
             Ok(x) => x,
             Err(err) => return Err(format!("{}: {}", "test_all", err)),
         };
-        let error = results.iter().map(|x| x.error).sum::<f64>() / cases_len as f64;
+        let error_sum = results.iter().map(|x| x.error).sum::<f64>();
+        let error = error_sum / cases_len as f64;
+        println!(
+            "{}: caseslen:{}, error_sum:{}, error:{}",
+            "test_all", cases_len, error_sum, error
+        );
+        println!("{}: {:?}", "test_all INFO", results[0]);
         Ok(BatchResult { results, error })
     }
     fn print_all<I, O>(
@@ -112,17 +131,9 @@ pub trait BaseNetwork: Clone {
         test_cases: &Vec<GenericTestCase<I, O>>,
         error_fn: Option<fn(f64, f64) -> f64>,
         d_error_fn: Option<fn(f64, f64) -> f64>,
-        d_activation_fn: fn(f64) -> f64,
     ) -> Result<Vec<f64>, String> {
         //we probably should have a timeout heh
-        self.learn(
-            test_cases,
-            None,
-            None,
-            error_fn,
-            d_error_fn,
-            d_activation_fn,
-        )
+        self.learn(test_cases, None, None, error_fn, d_error_fn)
     }
     fn learn<I, O>(
         &mut self,
@@ -131,10 +142,10 @@ pub trait BaseNetwork: Clone {
         min_error: Option<f64>,
         error_fn: Option<fn(f64, f64) -> f64>,
         d_error_fn: Option<fn(f64, f64) -> f64>,
-        d_activation_fn: fn(f64) -> f64,
     ) -> Result<Vec<f64>, String> {
         let mut learn_errors = Vec::new();
         let mut test_all_result = self.test_all(&test_cases, None)?;
+        println!("tik");
         let mut rate: f64 = 0.2;
         let max_iterations = match max_iterations {
             Some(x) => x,
@@ -149,16 +160,13 @@ pub trait BaseNetwork: Clone {
         let mut best_error = 1.0;
         let mut last_rate_change = 0;
         while i < max_iterations && test_all_result.error > min_error {
-            test_all_result = match self.learn_from_testcases(
-                &test_cases,
-                rate,
-                error_fn,
-                d_error_fn,
-                d_activation_fn,
-            ) {
-                Ok(r) => r,
-                Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
-            };
+            println!("tok");
+            test_all_result =
+                match self.learn_from_testcases(&test_cases, rate, error_fn, d_error_fn) {
+                    Ok(r) => r,
+                    Err(e) => return Err(format!("{}: {}", "auto_learn", e)),
+                };
+            println!("tooooooooooooooook");
             //wait for 1s
             // if i % 1000 == 0 {
             // println!(
@@ -187,6 +195,7 @@ pub trait BaseNetwork: Clone {
                 // println!("=====heating up, rate increasing to {:.3}", rate);
                 last_rate_change = i;
             }
+            println!("{:?}", test_all_result.results[0]);
             learn_errors.push(test_all_result.error);
             rate = rate.min(4.0).max(0.0);
             // println!("{}: {}", i, error);

@@ -1,6 +1,9 @@
-use crate::traits::{
-    generic_test_case::{BatchResult, GenericTestCase},
-    network_traits::BaseNetwork,
+use crate::{
+    networks::activation_functions::ActivationFunction,
+    traits::{
+        generic_test_case::{BatchResult, GenericTestCase},
+        network_traits::BaseNetwork,
+    },
 };
 
 use super::layer::Layer;
@@ -9,7 +12,8 @@ use super::layer::Layer;
 #[derive(Clone)]
 pub struct Network1 {
     pub layers: Vec<Layer>,
-    pub activation_fn: fn(f64) -> f64,
+    pub activation_fn: ActivationFunction,
+    pub output_activation_fn: ActivationFunction,
 }
 
 impl BaseNetwork for Network1 {
@@ -21,7 +25,8 @@ impl BaseNetwork for Network1 {
         output_nodes: usize,
         internal_nodes: usize,
         internal_layers: usize,
-        activation_fn: fn(f64) -> f64,
+        activation_fn: ActivationFunction,
+        final_layer_activation_fn: ActivationFunction,
     ) -> Network1 {
         Network1 {
             layers: {
@@ -34,6 +39,7 @@ impl BaseNetwork for Network1 {
                 layers
             },
             activation_fn,
+            output_activation_fn: final_layer_activation_fn,
         }
     }
     fn replace_self(&mut self, other: &mut Self) {
@@ -53,47 +59,21 @@ impl BaseNetwork for Network1 {
         self.layers.iter_mut().for_each(|x| x.rand_weights(rate));
     }
     fn run(&mut self, initial_inputs: Vec<f64>) -> Vec<f64> {
-        // if self.layers.len() == 0 {
-        //     return Err("Network: Can not run network with zero layers".to_string());
-        // }
-        // if self.layers[0].nodes.len() == 0 {
-        //     return Err("Network: Can not run network with zero nodes".to_string());
-        // }
-        // if self.layers[0].nodes[0].paths.len() == 0 {
-        //     return Err("Network: Can not run network with zero paths".to_string());
-        // }
-        // if initial_inputs.len() != self.layers[0].nodes[0].paths.len() {
-        //     return Err(format!(
-        //         "{}: initial_inputs {} != layers.first.len {})",
-        //         "Network::run",
-        //         initial_inputs.len(),
-        //         self.layers[0].nodes.len()
-        //     ));
-        // }
         let _ = self.layers[0].run(&initial_inputs);
         for i in 1..self.layers.len() {
             let inputs = &self.layers[i - 1]
                 .nodes
                 .iter()
-                .map(|x| x.value)
+                .map(|x| self.activation_fn.forward(x.value))
                 .collect::<Vec<f64>>();
             let _ = self.layers[i].run(inputs);
         }
-        let output_fn = self.activation_fn;
-        // match self.layers.last() {
-        //     Some(x) => Ok(x
-        //         .nodes
-        //         .iter()
-        //         .map(|x| output_fn(x.value))
-        //         .collect::<Vec<f64>>()),
-        //     None => Err("self.layers.last() returned None".to_string()),
-        // }
         self.layers
             .last()
             .unwrap()
             .nodes
             .iter()
-            .map(|x| output_fn(x.value))
+            .map(|x| self.output_activation_fn.forward(x.value))
             .collect::<Vec<f64>>()
     }
 
@@ -107,7 +87,6 @@ impl BaseNetwork for Network1 {
         rate: f64,
         error_fn: Option<fn(f64, f64) -> f64>,
         d_error_fn: Option<fn(f64, f64) -> f64>,
-        d_activation_fn: fn(f64) -> f64,
     ) -> Result<BatchResult, String> {
         let pre = self.test_all(test_cases, error_fn);
         self.rand_weights(rate);
@@ -124,5 +103,13 @@ impl BaseNetwork for Network1 {
             return pre;
         }
         return post;
+    }
+
+    fn activation_fn(&self) -> &ActivationFunction {
+        &self.activation_fn
+    }
+
+    fn final_layer_activation_fn(&self) -> &ActivationFunction {
+        &self.output_activation_fn
     }
 }

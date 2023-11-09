@@ -1,4 +1,6 @@
-use rand::random;
+use rand::{thread_rng, Rng};
+
+use crate::networks::activation_functions::ActivationFunction;
 
 #[derive(Clone)]
 pub struct Layer {
@@ -11,32 +13,27 @@ pub struct Layer {
     // pub nodes: [[f64;input_size];output_size]],
     pub bias: Vec<f64>,
     old_bias: Vec<f64>,
-    output_fn: fn(f64) -> f64,
+    activation_fn: ActivationFunction,
 }
 impl Layer {
-    pub fn new(input_size: usize, output_size: usize, output_fn: fn(f64) -> f64) -> Layer {
-        let rand_rate = || (random::<f64>());
+    pub fn new(input_size: usize, output_size: usize, activation_fn: ActivationFunction) -> Layer {
+        let mut rng = thread_rng();
+        let mut rand_rate = || rng.gen_range(-0.5..0.5);
         let weights = (0..output_size)
             .map(|_| (0..input_size).map(|_| rand_rate()).collect())
             .collect();
         let bias = (0..output_size).map(|_| rand_rate()).collect();
-        // let weights = (0..output_size)
-        //     .map(|_| (0..input_size).map(|_| 0.5).collect())
-        //     .collect();
-        // let bias = (0..output_size).map(|_| 0.1).collect();
-
         Layer {
-            // weights: vec![vec![0.1; input_size]; output_size],
             weights,
             old_weights: vec![vec![0.0; input_size]; output_size],
-            // bias: vec![0.1; output_size],
             bias,
             old_bias: vec![0.0; output_size],
-            output_fn,
+            activation_fn,
         }
     }
     pub fn rand_weights(&mut self, rate: f64) {
-        let rand_rate = || (random::<f64>() - 0.5) * rate;
+        let mut rng = thread_rng();
+        let mut rand_rate = || (rng.gen_range(-0.5..0.5)) * rate;
         self.old_weights = self.weights.clone();
         self.weights
             .iter_mut()
@@ -45,7 +42,8 @@ impl Layer {
         self.bias.iter_mut().for_each(|x| *x += 0.1 * rand_rate());
     }
     pub fn run_total(&self, inputs: Vec<f64>) -> Vec<f64> {
-        self.weights
+        let result = self
+            .weights
             .iter()
             .map(|paths| {
                 paths
@@ -56,13 +54,25 @@ impl Layer {
             })
             .zip(self.bias.iter())
             .map(|(x, y)| (x + y))
-            .collect()
+            .collect();
+        // println!("result: {:?}", result);
+        result
     }
     pub fn run(&self, inputs: Vec<f64>) -> Vec<f64> {
+        // println!("LAYER INPUTS: {:?}", inputs);
+        if inputs[0].is_nan() {
+            println!("NAN INPUTS NFJDSKNFJKSF in run");
+        }
         self.run_activate(self.run_total(inputs))
     }
     pub fn run_activate(&self, inputs: Vec<f64>) -> Vec<f64> {
-        inputs.iter().map(|x| (self.output_fn)(*x)).collect()
+        // println!("input: {:?}", inputs);
+        let result = inputs
+            .iter()
+            .map(|x| self.activation_fn.forward(*x))
+            .collect();
+        // println!("result: {:?}", result);
+        result
     }
 
     pub fn revert(&mut self) {

@@ -45,16 +45,6 @@ impl Node {
             .map(|(x, y)| x * y)
             .sum::<f64>()
             + self.c;
-        //TODO: Test which is faster, garuntee it's the above one, but be cool to see how much
-        // then also to check how this compares to doing more matricie style
-        // self.value = self.c;
-        // for i in 0..inputs.len() {
-        //     self.value += inputs[i] * self.paths[i];
-        // }
-        self.value = self.value.min(1.0).max(0.0);
-        //i think my and one is fucked, becuase removing this bounds seems to
-        //break the and one, but the AND one seems broken cause the AND+OR one
-        //seems to run better... lol
         Ok(())
     }
     pub fn rand_weights(&mut self, rate: f64) {
@@ -64,19 +54,9 @@ impl Node {
         self.old_c = self.c.clone();
         self.paths.iter_mut().for_each(|x| {
             let r = rand_rate();
-            // println!("r: {}, rate: {}", r, rate);
             *x += r;
-            //removing these path limits seemed to work fine
-            // *x = x.min(1.0).max(-1.0);
-            // *x = x.min(1.0).max(0.0);
         });
-        //only update half of them
-        //this one is also fine without bounds
-        // self.c = (self.c + rand_rate(rate)).min(1.0).max(-1.0);
-        // self.c += 0.1 * rand_rate(rate);
         self.c += 0.1 * rand_rate();
-        // println!("old: {:?}, new:{:?}", self.old_paths, self.paths);
-        // println!("oldc: {:?}, newc:{:?}", self.old_c, self.c);
     }
 
     pub fn revert(&mut self) {

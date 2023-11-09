@@ -7,9 +7,33 @@ pub fn runner(network: &Option<Networks>) {
     let layers = 1..3;
     let nodes = 2..11;
     match network {
-        Some(Networks::Network1) => run::run("Xor", Networks::Network1, &test_cases, layers, nodes),
-        Some(Networks::Network2) => run::run("Xor", Networks::Network2, &test_cases, layers, nodes),
-        Some(Networks::Network3) => run::run("Xor", Networks::Network3, &test_cases, layers, nodes),
+        Some(Networks::Network1) => run::run(
+            "Xor",
+            Networks::Network1,
+            &test_cases,
+            layers,
+            nodes,
+            None,
+            None,
+        ),
+        Some(Networks::Network2) => run::run(
+            "Xor",
+            Networks::Network2,
+            &test_cases,
+            layers,
+            nodes,
+            None,
+            None,
+        ),
+        Some(Networks::Network3) => run::run(
+            "Xor",
+            Networks::Network3,
+            &test_cases,
+            layers,
+            nodes,
+            None,
+            None,
+        ),
         None => {
             Networks::iter().for_each(|network| {
                 runner(&Some(network));
@@ -20,18 +44,26 @@ pub fn runner(network: &Option<Networks>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::networks::activation_functions::ActivationFunction;
     use crate::networks::network3::network;
     use crate::traits::network_traits::BaseNetwork;
 
     fn default_network() -> network::Network3 {
-        network::Network3::new(2, 1, 3, 2, |x| x.max(0.0))
+        network::Network3::new(
+            2,
+            1,
+            3,
+            2,
+            ActivationFunction::Relu,
+            ActivationFunction::Relu,
+        )
     }
 
     #[test]
     fn learn() {
         let test_cases = TestCaseXor::get_all_generic();
         let mut network = default_network();
-        match network.learn(&test_cases, Some(100_000), None, None, None, |_| 1.0) {
+        match network.learn(&test_cases, Some(100_000), None, None, None) {
             Ok(_) => (),
             Err(e) => panic!("{}", e),
         }

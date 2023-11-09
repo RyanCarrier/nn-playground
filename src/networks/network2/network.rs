@@ -1,6 +1,9 @@
-use crate::traits::{
-    generic_test_case::{BatchResult, GenericTestCase},
-    network_traits::BaseNetwork,
+use crate::{
+    networks::activation_functions::ActivationFunction,
+    traits::{
+        generic_test_case::{BatchResult, GenericTestCase},
+        network_traits::BaseNetwork,
+    },
 };
 
 use super::layer::Layer;
@@ -9,18 +12,18 @@ use super::layer::Layer;
 #[derive(Clone)]
 pub struct Network2 {
     pub layers: Vec<Layer>,
+    pub activation_fn: ActivationFunction,
+    pub output_activation_fn: ActivationFunction,
 }
 
 impl BaseNetwork for Network2 {
-    fn title(&self) -> String {
-        "Network2 (Vec<f64>)".to_string()
-    }
     fn new(
         input_nodes: usize,
         output_nodes: usize,
         internal_nodes: usize,
         internal_layers: usize,
-        activation_fn: fn(f64) -> f64,
+        activation_fn: ActivationFunction,
+        output_activation_fn: ActivationFunction,
     ) -> Network2 {
         Network2 {
             layers: {
@@ -29,13 +32,19 @@ impl BaseNetwork for Network2 {
                 for _ in 0..(internal_layers - 1) {
                     layers.push(Layer::new(internal_nodes, internal_nodes, activation_fn));
                 }
-                layers.push(Layer::new(internal_nodes, output_nodes, activation_fn));
+                layers.push(Layer::new(
+                    internal_nodes,
+                    output_nodes,
+                    output_activation_fn,
+                ));
                 layers
             },
+            activation_fn,
+            output_activation_fn,
         }
     }
-    fn replace_self(&mut self, other: &mut Self) {
-        self.layers = other.layers.clone();
+    fn title(&self) -> String {
+        "Network2 (Vec<f64>)".to_string()
     }
     fn internel_layers(&self) -> usize {
         self.layers.len() - 1
@@ -54,11 +63,6 @@ impl BaseNetwork for Network2 {
             .iter()
             .fold(initial_inputs, |inputs, layer| layer.run(inputs))
     }
-
-    fn revert(&mut self) {
-        self.layers.iter_mut().for_each(|x| x.revert());
-    }
-
     #[allow(unused_variables)]
     fn learn_from_testcases<I, O>(
         &mut self,
@@ -66,7 +70,6 @@ impl BaseNetwork for Network2 {
         rate: f64,
         error_fn: Option<fn(f64, f64) -> f64>,
         d_error_fn: Option<fn(f64, f64) -> f64>,
-        d_activation_fn: fn(f64) -> f64,
     ) -> Result<BatchResult, String> {
         let pre = self.test_all(test_cases, error_fn);
         self.rand_weights(rate);
@@ -83,5 +86,21 @@ impl BaseNetwork for Network2 {
             return pre;
         }
         return post;
+    }
+
+    fn revert(&mut self) {
+        self.layers.iter_mut().for_each(|x| x.revert());
+    }
+
+    fn replace_self(&mut self, other: &mut Self) {
+        self.layers = other.layers.clone();
+    }
+
+    fn activation_fn(&self) -> &ActivationFunction {
+        &self.activation_fn
+    }
+
+    fn final_layer_activation_fn(&self) -> &ActivationFunction {
+        &self.output_activation_fn
     }
 }

@@ -5,7 +5,7 @@ use nn_playground::{
         game::{play::play_game, tik_tak_toes::TikTakToes},
     },
     graph::build_graph,
-    networks::{network1::network::Network1, Networks},
+    networks::{activation_functions::ActivationFunction, network1::network::Network1, Networks},
     traits::{generic_game_case::GenericGameCase, network_traits::BaseNetwork},
 };
 use strum::IntoEnumIterator;
@@ -53,6 +53,8 @@ enum DataSet {
     And,
     AndOr,
     Xor,
+    MathLinear,
+    MathQuadratic,
 }
 
 fn main() {
@@ -72,7 +74,7 @@ fn run_with(runner: Option<Runner>, network: &Option<Networks>) {
         Some(Runner::PlayGame(g)) => match g.data {
             Some(GameSet::TikTakToes) => {
                 let game = TikTakToes;
-                let mut network = Network1::new(game.input_nodes(),game.output_nodes(), 10,10,|x|x.max(0.0));
+                let mut network = Network1::new(game.input_nodes(),game.output_nodes(), 10,10,ActivationFunction::Relu,ActivationFunction::Relu);
                 play_game(game, &mut network);
             }
             Some(GameSet::TikTakToesTest) => panic!("not implemented"),
@@ -85,6 +87,8 @@ fn run_with(runner: Option<Runner>, network: &Option<Networks>) {
             //lol andor orand
             Some(DataSet::AndOr) => cases::simple::or_and::runner(network),
             Some(DataSet::Xor) => cases::simple::xor::runner(network),
+            Some(DataSet::MathLinear) => cases::simple::math_linear::runner(network),
+            Some(DataSet::MathQuadratic) => cases::simple::math_quadratic::runner(network),
             None => DataSet::iter()
                 .for_each(|x| run_with(Some(Runner::Data(DataArgs { data: Some(x) })),network)),
         },

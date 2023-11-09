@@ -24,7 +24,7 @@ impl<I, O> GenericTestCase<I, O> {
     // }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BatchResult {
     pub results: Vec<TestResult>,
     pub error: f64,
@@ -46,7 +46,7 @@ impl BatchResult {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TestResult {
     pub result: Vec<f64>,
     pub expected: Vec<f64>,

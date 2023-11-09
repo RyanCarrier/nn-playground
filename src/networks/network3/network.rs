@@ -1,6 +1,9 @@
-use crate::traits::{
-    generic_test_case::{BatchResult, GenericTestCase},
-    network_traits::BaseNetwork,
+use crate::{
+    networks::activation_functions::ActivationFunction,
+    traits::{
+        generic_test_case::{BatchResult, GenericTestCase},
+        network_traits::BaseNetwork,
+    },
 };
 
 use super::layer::Layer;
@@ -9,30 +12,19 @@ use super::layer::Layer;
 #[derive(Clone)]
 pub struct Network3 {
     pub layers: Vec<Layer>,
+    pub activation_fn: ActivationFunction,
+    pub output_activation_fn: ActivationFunction,
 }
 
 impl BaseNetwork for Network3 {
-    fn title(&self) -> String {
-        "Network3 (Vec<f64>)".to_string()
-    }
     fn new(
         input_nodes: usize,
         output_nodes: usize,
         internal_nodes: usize,
         internal_layers: usize,
-        activation_fn: fn(f64) -> f64,
+        activation_fn: ActivationFunction,
+        output_activation_fn: ActivationFunction,
     ) -> Network3 {
-        // Network3 {
-        //     layers: {
-        //         let mut layers: Vec<Layer> = Vec::new();
-        //         layers.push(Layer::new(input_nodes, internal_nodes, output_fn));
-        //         for _ in 0..(internal_layers - 1) {
-        //             layers.push(Layer::new(internal_nodes, internal_nodes, output_fn));
-        //         }
-        //         layers.push(Layer::new(internal_nodes, output_nodes, output_fn));
-        //         layers
-        //     },
-        // }
         Network3 {
             layers: {
                 let mut layers: Vec<Layer> = Vec::new();
@@ -40,14 +32,26 @@ impl BaseNetwork for Network3 {
                 for _ in 0..(internal_layers - 1) {
                     layers.push(Layer::new(internal_nodes, internal_nodes, activation_fn));
                 }
-                layers.push(Layer::new(internal_nodes, output_nodes, activation_fn));
+                layers.push(Layer::new(
+                    internal_nodes,
+                    output_nodes,
+                    output_activation_fn,
+                ));
                 layers
             },
+            activation_fn,
+            output_activation_fn,
         }
     }
+    fn activation_fn(&self) -> &ActivationFunction {
+        &self.activation_fn
+    }
 
-    fn replace_self(&mut self, other: &mut Self) {
-        self.layers = other.layers.clone();
+    fn final_layer_activation_fn(&self) -> &ActivationFunction {
+        &self.output_activation_fn
+    }
+    fn title(&self) -> String {
+        "Network3 (Vec<f64>)".to_string()
     }
     fn internel_layers(&self) -> usize {
         self.layers.len() - 1
@@ -58,18 +62,21 @@ impl BaseNetwork for Network3 {
         }
         self.layers[0].bias.len()
     }
+
     fn rand_weights(&mut self, rate: f64) {
         self.layers.iter_mut().for_each(|x| x.rand_weights(rate));
     }
 
     fn run(&mut self, initial_inputs: Vec<f64>) -> Vec<f64> {
-        self.layers
+        let result = self
+            .layers
             .iter()
-            .fold(initial_inputs, |inputs, layer| layer.run(inputs))
-    }
-
-    fn revert(&mut self) {
-        self.layers.iter_mut().for_each(|x| x.revert());
+            .fold(initial_inputs, |inputs, layer| layer.run(inputs));
+        if result[0].is_nan() {
+            println!("result: {:?}", result);
+            panic!("result is nan");
+        }
+        result
     }
     fn learn_from_testcases<I, O>(
         &mut self,
@@ -77,15 +84,22 @@ impl BaseNetwork for Network3 {
         rate: f64,
         error_fn: Option<fn(f64, f64) -> f64>,
         d_error_fn: Option<fn(f64, f64) -> f64>,
-        d_activation_fn: fn(f64) -> f64,
     ) -> Result<BatchResult, String> {
         let d_error_fn = match d_error_fn {
             Some(x) => x,
             None => |y: f64, t: f64| (y - t),
         };
-        let rate = 0.25;
+        let rate = 0.30;
+        let last_l = self.layers.len() - 1;
         for case in test_cases.iter() {
             let (layer_outputs, layer_activations) = self.run_by_steps(&case.get_input());
+            let daf = |l: usize, j: usize| {
+                if l == last_l {
+                    self.output_activation_fn.derivative(layer_outputs[l][j])
+                } else {
+                    self.activation_fn.derivative(layer_outputs[l][j])
+                }
+            };
             let mut layer_gradient = layer_activations
                 .last()
                 .unwrap()
@@ -103,7 +117,7 @@ impl BaseNetwork for Network3 {
                     let da_do_weights: Vec<f64> = layer_gradient
                         .iter()
                         .enumerate()
-                        .map(|(j, gradient)| gradient * d_activation_fn(layer_outputs[l][j]))
+                        .map(|(j, gradient)| gradient * daf(l, j))
                         .collect();
                     for i in 0..self.layers[l].weights[0].len() {
                         let mut temp_grad = 0.0;
@@ -116,7 +130,7 @@ impl BaseNetwork for Network3 {
                 };
 
                 for j in 0..self.layers[l].weights.len() {
-                    let da_do = d_activation_fn(layer_outputs[l][j]);
+                    let da_do = daf(l, j);
                     for i in 0..self.layers[l].weights[j].len() {
                         let prev_activations = if l == 0 {
                             case.get_input().clone()
@@ -136,7 +150,16 @@ impl BaseNetwork for Network3 {
         }
         self.test_all(test_cases, error_fn)
     }
+
+    fn revert(&mut self) {
+        self.layers.iter_mut().for_each(|x| x.revert());
+    }
+
+    fn replace_self(&mut self, other: &mut Self) {
+        self.layers = other.layers.clone();
+    }
 }
+
 impl Network3 {
     // pub fn step(&self,layer:usize, inputs: Vec<f64>) -> Vec<f64> {
     //     self.layers[layer].run(inputs)
@@ -152,26 +175,34 @@ impl Network3 {
             output_nodes,
             internal_nodes,
             internal_layers,
-            Self::activation_fn,
+            ActivationFunction::Sigmoid,
+            ActivationFunction::Sigmoid,
         )
     }
     pub fn run_by_steps(&self, initial_inputs: &Vec<f64>) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
         let mut layer_outputs: Vec<Vec<f64>> = vec![Vec::new(); self.layers.len()];
         let mut layer_activations: Vec<Vec<f64>> = vec![Vec::new(); self.layers.len()];
+        // println!("Running by steps with initial {:?}", initial_inputs);
         layer_outputs[0] = self.layers[0].run_total(initial_inputs.clone());
         layer_activations[0] = self.layers[0].run_activate(layer_outputs[0].clone());
         for i in 1..self.layers.len() {
+            if layer_activations[i - 1].clone()[0].is_nan() {
+                panic!(
+                    "NAN activation layer({}) in run_by_steps\noutputs:{:?}\nactivations:{:?}\n{:?}\n{:?}",
+                    i - 1,
+                    layer_outputs[i - 1],
+                    layer_activations[i - 1],
+                    layer_outputs,
+                    layer_activations,
+                );
+            }
             layer_outputs[i] = self.layers[i].run_total(layer_activations[i - 1].clone());
             layer_activations[i] = self.layers[i].run_activate(layer_outputs[i].clone());
         }
         (layer_outputs, layer_activations)
     }
-    pub fn d_activation_fn(x: f64) -> f64 {
-        let activation = Self::activation_fn(x);
-        activation * (1.0 - activation)
-    }
-    pub fn activation_fn(x: f64) -> f64 {
-        1.0 / (1.0 + f64::exp(-x))
+    pub fn activation_fn() -> ActivationFunction {
+        ActivationFunction::Sigmoid
     }
 
     #[allow(dead_code, unused_variables)]
